@@ -22,15 +22,19 @@ app = Flask(__name__)
 CORS(app)
 app.secret_key = os.getenv('SECRET_KEY', 'sportcards-2024')
 
-# Inicializar BD siempre (tambi√©n con gunicorn en producci√≥n)
+# Inicializar BD siempre (también con gunicorn en producción)
 _init_db()
 
 DATA_DIR = os.getenv('DATA_DIR', os.path.dirname(__file__))
 UPLOAD_DIR = os.path.join(DATA_DIR, 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'}
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def allowed_file(filename, content_type=None):
+    if content_type and content_type.startswith('image/'):
+        return True
+    if not filename or '.' not in filename:
+        return bool(content_type and content_type.startswith('image/'))
+    return filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def login_required(f):
     @wraps(f)
@@ -55,7 +59,7 @@ def save_photo(file, subfolder):
     img.save(path, 'JPEG', quality=75, optimize=True)
     return path, f'uploads/{subfolder}/{filename}'
 
-# --- P√°ginas ---
+# --- Páginas ---
 
 @app.route('/login', methods=['GET'])
 def login_page():
@@ -69,10 +73,10 @@ def do_login():
     username = data.get('username', '').strip()
     password = data.get('password', '')
     if not username or not password:
-        return jsonify({'error': 'Usuario y contrase√±a requeridos'}), 400
+        return jsonify({'error': 'Usuario y contraseña requeridos'}), 400
     user = verify_user(username, password)
     if not user:
-        return jsonify({'error': 'Usuario o contrase√±a incorrectos'}), 401
+        return jsonify({'error': 'Usuario o contraseña incorrectos'}), 401
     session['user_id'] = user['id']
     session['username'] = user['username']
     return jsonify({'ok': True, 'username': user['username']})
@@ -83,9 +87,9 @@ def do_register():
     username = data.get('username', '').strip()
     password = data.get('password', '')
     if not username or not password:
-        return jsonify({'error': 'Usuario y contrase√±a requeridos'}), 400
+        return jsonify({'error': 'Usuario y contraseña requeridos'}), 400
     if len(password) < 4:
-        return jsonify({'error': 'La contrase√±a debe tener al menos 4 caracteres'}), 400
+        return jsonify({'error': 'La contraseña debe tener al menos 4 caracteres'}), 400
     user_id, error = create_user(username, password)
     if error:
         return jsonify({'error': error}), 400
@@ -216,13 +220,13 @@ def api_identify():
     front_file = request.files.get('front')
     back_file = request.files.get('back')
 
-    if not front_file or not allowed_file(front_file.filename):
+    if not front_file or not allowed_file(front_file.filename, front_file.content_type):
         return jsonify({'error': 'Foto delantera requerida'}), 400
 
     front_path, front_rel = save_photo(front_file, 'fronts')
     back_path = None
     back_rel = None
-    if back_file and allowed_file(back_file.filename):
+    if back_file and allowed_file(back_file.filename, back_file.content_type):
         back_path, back_rel = save_photo(back_file, 'backs')
 
     data, error = identify_card(front_path, back_path)
@@ -232,7 +236,7 @@ def api_identify():
     data['photo_front'] = front_rel
     data['photo_back'] = back_rel
 
-    # Precio de eBay autom√°tico (si est√° configurado)
+    # Precio de eBay automático (si está configurado)
     if data.get('player') and data.get('sport') != 'pokemon':
         result, _ = search_card_price(
             data.get('player'), data.get('year'), data.get('set_name'),
@@ -351,7 +355,7 @@ def service_worker():
     return send_from_directory('static', 'sw.js')
 
 def search_pokemon_price(name, set_name, card_number):
-    """Busca precio en eBay para cartas Pok√©mon."""
+    """Busca precio en eBay para cartas Pokémon."""
     return search_card_price(name, None, set_name, None, None, None)
 
 if __name__ == '__main__':
