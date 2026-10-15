@@ -54,6 +54,8 @@ def save_photo(file, subfolder):
     filename = f'{uuid.uuid4().hex}.jpg'
     path = os.path.join(dest_dir, filename)
     img = Image.open(file.stream)
+    from PIL import ImageOps
+    img = ImageOps.exif_transpose(img)
     img = img.convert('RGB')
     img.thumbnail((1200, 1200), Image.LANCZOS)
     img.save(path, 'JPEG', quality=75, optimize=True)
