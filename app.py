@@ -9,7 +9,7 @@ from functools import wraps
 
 load_dotenv()
 
-from database import (init_db, get_stats, get_all_cards, get_card, create_card, update_card,
+from database import (init_db as _init_db, get_stats, get_all_cards, get_card, create_card, update_card,
                       add_price_history, get_price_history, get_filter_options,
                       create_user, verify_user, get_user, get_all_users,
                       get_stats_by_sport, get_top_cards)
@@ -21,6 +21,9 @@ from excel_service import export_collection
 app = Flask(__name__)
 CORS(app)
 app.secret_key = os.getenv('SECRET_KEY', 'sportcards-2024')
+
+# Inicializar BD siempre (también con gunicorn en producción)
+_init_db()
 
 DATA_DIR = os.getenv('DATA_DIR', os.path.dirname(__file__))
 UPLOAD_DIR = os.path.join(DATA_DIR, 'uploads')
@@ -307,5 +310,4 @@ def search_pokemon_price(name, set_name, card_number):
     return search_card_price(name, None, set_name, None, None, None)
 
 if __name__ == '__main__':
-    init_db()
     app.run(host='0.0.0.0', port=5052, debug=True)

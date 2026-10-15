@@ -171,14 +171,20 @@ def get_all_cards(status=None, search=None, sport=None, year=None, set_name=None
 def get_filter_options(user_id=None):
     conn = get_db()
     c = conn.cursor()
-    where = 'WHERE user_id = ?' if user_id else ''
-    params = (user_id,) if user_id else ()
-    c.execute(f'SELECT DISTINCT sport FROM cards {where} AND sport IS NOT NULL ORDER BY sport'.replace('WHERE AND', 'WHERE'), params)
-    sports = [r[0] for r in c.fetchall()]
-    c.execute(f'SELECT DISTINCT year FROM cards {where} AND year IS NOT NULL ORDER BY year DESC'.replace('WHERE AND', 'WHERE'), params)
-    years = [r[0] for r in c.fetchall()]
-    c.execute(f'SELECT DISTINCT set_name FROM cards {where} AND set_name IS NOT NULL ORDER BY set_name'.replace('WHERE AND', 'WHERE'), params)
-    sets = [r[0] for r in c.fetchall()]
+    if user_id:
+        c.execute('SELECT DISTINCT sport FROM cards WHERE user_id=? AND sport IS NOT NULL ORDER BY sport', (user_id,))
+        sports = [r[0] for r in c.fetchall()]
+        c.execute('SELECT DISTINCT year FROM cards WHERE user_id=? AND year IS NOT NULL ORDER BY year DESC', (user_id,))
+        years = [r[0] for r in c.fetchall()]
+        c.execute('SELECT DISTINCT set_name FROM cards WHERE user_id=? AND set_name IS NOT NULL ORDER BY set_name', (user_id,))
+        sets = [r[0] for r in c.fetchall()]
+    else:
+        c.execute('SELECT DISTINCT sport FROM cards WHERE sport IS NOT NULL ORDER BY sport')
+        sports = [r[0] for r in c.fetchall()]
+        c.execute('SELECT DISTINCT year FROM cards WHERE year IS NOT NULL ORDER BY year DESC')
+        years = [r[0] for r in c.fetchall()]
+        c.execute('SELECT DISTINCT set_name FROM cards WHERE set_name IS NOT NULL ORDER BY set_name')
+        sets = [r[0] for r in c.fetchall()]
     conn.close()
     return {'sports': sports, 'years': years, 'sets': sets}
 
