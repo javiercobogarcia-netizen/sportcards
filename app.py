@@ -290,6 +290,31 @@ def api_update_card(card_id):
         add_price_history(card_id, data['sale_price'], 'venta')
     return jsonify({'ok': True})
 
+@app.route('/api/card/<int:card_id>/photos', methods=['POST'])
+@login_required
+def api_update_photos(card_id):
+    card = get_card(card_id, user_id=current_user_id())
+    if not card:
+        return jsonify({'error': 'No autorizado'}), 403
+    updates = {}
+    front_file = request.files.get('front')
+    back_file = request.files.get('back')
+    if front_file:
+        try:
+            _, front_rel = save_photo(front_file, 'fronts')
+            updates['photo_front'] = front_rel
+        except Exception as e:
+            return jsonify({'error': f'Error procesando foto delantera: {e}'}), 400
+    if back_file:
+        try:
+            _, back_rel = save_photo(back_file, 'backs')
+            updates['photo_back'] = back_rel
+        except Exception as e:
+            return jsonify({'error': f'Error procesando foto trasera: {e}'}), 400
+    if updates:
+        update_card(card_id, updates)
+    return jsonify({'ok': True, **updates})
+
 @app.route('/api/card/<int:card_id>/sell', methods=['POST'])
 @login_required
 def api_sell_card(card_id):
