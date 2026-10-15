@@ -340,7 +340,7 @@ body {
   outline: none;
 }
 .search-box::before {
-  content: 'üîç';
+  content: '🔍';
   position: absolute;
   left: 12px;
   top: 50%;
