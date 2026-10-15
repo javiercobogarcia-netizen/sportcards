@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+sportcards.db
+uploads/
+qrcodes/
+exports/
+*.DS_Store

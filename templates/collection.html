@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#CC0000">
+<title>Colección — SportCards</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+.filters-panel { background: white; border-radius: var(--radius); padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.filters-panel h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+.filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.filter-row select { padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text); -webkit-appearance: none; outline: none; width: 100%; }
+.filter-row select:focus { border-color: var(--red); }
+.filter-clear { font-size: 12px; color: var(--red); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; }
+.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.active-filter { background: #ffebee; color: var(--red); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.active-filter button { background: none; border: none; color: var(--red); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="/" class="nav-back">‹</a>
+  <h1>Mi colección</h1>
+  <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar">📊</a>
+</div>
+
+<div class="container">
+
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Buscar jugador, set, equipo..." oninput="loadCards()">
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-status="" onclick="setFilter(this,'')">Todas</button>
+    <button class="filter-tab" data-status="owned" onclick="setFilter(this,'owned')">En posesión</button>
+    <button class="filter-tab" data-status="sold" onclick="setFilter(this,'sold')">Vendidas</button>
+  </div>
+
+  <div class="filters-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 style="margin:0">🔽 Filtros</h3>
+      <button class="filter-clear" onclick="clearFilters()">Limpiar todo</button>
+    </div>
+    <div class="filter-row">
+      <select id="f-sport" onchange="loadCards()"><option value="">Todos los deportes</option></select>
+      <select id="f-year" onchange="loadCards()"><option value="">Todos los años</option></select>
+    </div>
+    <select id="f-set" onchange="loadCards()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;-webkit-appearance:none;outline:none">
+      <option value="">Todas las colecciones</option>
+    </select>
+  </div>
+
+  <div id="active-filters" class="active-filters"></div>
+  <div id="result-count" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
+  <div id="cards-list"></div>
+
+</div>
+
+<nav class="bottom-nav">
+  <a href="/"><span>🏠</span><span>Inicio</span></a>
+  <a href="/collection" class="active"><span>📚</span><span>Colección</span></a>
+  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
+</nav>
+
+<script>
+let currentStatus = '';
+
+async function loadFilterOptions() {
+  const r = await fetch('/api/filter-options');
+  const opts = await r.json();
+  const sportSel = document.getElementById('f-sport');
+  const yearSel = document.getElementById('f-year');
+  const setSel = document.getElementById('f-set');
+  opts.sports.forEach(s => sportSel.innerHTML += `<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`);
+  opts.years.forEach(y => yearSel.innerHTML += `<option value="${y}">${y}</option>`);
+  opts.sets.forEach(s => setSel.innerHTML += `<option value="${s}">${s}</option>`);
+}
+
+function setFilter(btn, status) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentStatus = status;
+  loadCards();
+}
+
+function clearFilters() {
+  document.getElementById('f-sport').value = '';
+  document.getElementById('f-year').value = '';
+  document.getElementById('f-set').value = '';
+  document.getElementById('search').value = '';
+  loadCards();
+}
+
+async function loadCards() {
+  const q = document.getElementById('search').value.trim();
+  const sport = document.getElementById('f-sport').value;
+  const year = document.getElementById('f-year').value;
+  const set = document.getElementById('f-set').value;
+
+  const params = new URLSearchParams();
+  if (currentStatus) params.append('status', currentStatus);
+  if (q) params.append('q', q);
+  if (sport) params.append('sport', sport);
+  if (year) params.append('year', year);
+  if (set) params.append('set', set);
+
+  // Mostrar filtros activos
+  const active = [];
+  if (sport) active.push({label: sport.charAt(0).toUpperCase()+sport.slice(1), key: 'f-sport'});
+  if (year) active.push({label: year, key: 'f-year'});
+  if (set) active.push({label: set.length > 25 ? set.substring(0,25)+'…' : set, key: 'f-set'});
+  document.getElementById('active-filters').innerHTML = active.map(a =>
+    `<div class="active-filter">${a.label}<button onclick="document.getElementById('${a.key}').value='';loadCards()">×</button></div>`
+  ).join('');
+
+  const r = await fetch('/api/cards?' + params);
+  const cards = await r.json();
+  document.getElementById('result-count').textContent = cards.length ? `${cards.length} carta${cards.length!==1?'s':''}` : '';
+
+  const container = document.getElementById('cards-list');
+  if (!cards.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">🃏</div><p>No hay cartas${q ? ' para "'+q+'"' : ''}.</p><a href="/add" class="btn btn-primary" style="max-width:220px;margin:0 auto">Añadir carta</a></div>`;
+    return;
+  }
+
+  container.innerHTML = cards.map(c => {
+    const thumb = c.photo_front
+      ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">`
+      : `<div class="card-thumb-placeholder">🃏</div>`;
+    const numbering = c.numbering ? String(c.numbering).replace(/^\/+/,'') : null;
+    const badges = [
+      c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
+      numbering ? `<span class="badge badge-numbered">/${numbering}</span>` : '',
+      c.status === 'sold' ? `<span class="badge badge-sold">Vendida</span>` : '',
+    ].filter(Boolean).join(' ');
+
+    let priceHtml = '';
+    if (c.status === 'sold' && c.sale_price && c.purchase_price) {
+      const profit = c.sale_price - c.purchase_price;
+      const roi = ((profit / c.purchase_price) * 100).toFixed(1);
+      priceHtml = `<div class="card-price">Vendida: ${c.sale_price.toFixed(2)} € <span class="${profit>=0?'roi-positive':'roi-negative'}">(${profit>=0?'+':''}${profit.toFixed(2)} € / ${roi}%)</span></div>`;
+    } else {
+      priceHtml = `<div class="card-price">Compra: ${c.purchase_price ? c.purchase_price.toFixed(2)+' €' : '—'}${c.market_price ? ' · Mercado: '+c.market_price.toFixed(2)+' €' : ''}</div>`;
+    }
+
+    return `<a href="/card/${c.id}" class="card-item">
+      ${thumb}
+      <div class="card-info">
+        <div class="card-player">${c.player}</div>
+        <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' · ')}</div>
+        ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
+        ${priceHtml}
+      </div>
+      <span style="color:#ccc;font-size:20px">›</span>
+    </a>`;
+  }).join('');
+}
+
+loadFilterOptions();
+loadCards();
+</script>
+</body>
+</html>

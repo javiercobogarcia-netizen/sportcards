@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#CC0000">
+<title>Añadir carta — SportCards</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<div class="nav">
+  <a href="/" class="nav-back">‹</a>
+  <h1>Nueva carta</h1>
+</div>
+
+<div class="container">
+
+  <!-- PASO 1: FOTOS -->
+  <div id="step-photos">
+    <div class="form-section">
+      <h2>📸 Foto de la carta</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:14px">Haz fotos de la parte delantera y trasera para identificar la carta automáticamente.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div>
+          <label class="photo-area" id="area-front" for="inp-front">
+            <input type="file" id="inp-front" accept="image/*" onchange="previewPhoto(this,'front')" style="display:none">
+            <div class="photo-icon">📷</div>
+            <div class="photo-label">Delantera</div>
+          </label>
+        </div>
+        <div>
+          <label class="photo-area" id="area-back" for="inp-back">
+            <input type="file" id="inp-back" accept="image/*" onchange="previewPhoto(this,'back')" style="display:none">
+            <div class="photo-icon">📷</div>
+            <div class="photo-label">Trasera</div>
+          </label>
+        </div>
+      </div>
+
+      <div id="alert-photos"></div>
+      <button class="btn btn-primary" id="btn-identify" onclick="identify()" disabled>🔍 Identificar carta</button>
+      <p style="font-size:12px;color:#999;text-align:center;margin-top:8px">O rellena los datos manualmente abajo</p>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="showForm(null)">Rellenar manualmente</button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="step-loading" style="display:none">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Identificando carta con IA...</p>
+      <p style="font-size:13px;color:#999">Analizando jugador, colección, numeración...</p>
+    </div>
+  </div>
+
+  <!-- PASO 2: FORMULARIO -->
+  <div id="step-form" style="display:none">
+
+    <div id="identify-info" class="identify-result" style="display:none">
+      <h3>✅ Carta identificada automáticamente. Revisa y corrige si es necesario.</h3>
+    </div>
+
+    <div class="form-section">
+      <h2>👤 Jugador</h2>
+      <div class="form-group">
+        <label>Nombre del jugador *</label>
+        <input type="text" id="f-player" placeholder="Ej: Lionel Messi" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Deporte</label>
+          <select id="f-sport">
+            <option value="">— Selecciona —</option>
+            <option>fútbol</option>
+            <option>baloncesto</option>
+            <option>béisbol</option>
+            <option>fútbol americano</option>
+            <option>hockey</option>
+            <option>otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Equipo</label>
+          <input type="text" id="f-team" placeholder="Ej: FC Barcelona">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>🃏 Datos de la carta</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Año</label>
+          <input type="number" id="f-year" placeholder="2023" min="1900" max="2099">
+        </div>
+        <div class="form-group">
+          <label>Nº de carta</label>
+          <input type="text" id="f-card-number" placeholder="Ej: #123">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Set / Colección</label>
+        <input type="text" id="f-set" placeholder="Ej: Topps Chrome, Prizm...">
+      </div>
+      <div class="form-group">
+        <label>Variante</label>
+        <input type="text" id="f-variant" placeholder="Ej: Refractor, Base, Holo...">
+      </div>
+      <div class="form-group">
+        <label>Numeración (si está limitada)</label>
+        <input type="text" id="f-numbering" placeholder="Ej: /99, /25, 1/1">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>🏆 Gradeo</h2>
+      <div class="form-group">
+        <label>¿Está gradada?</label>
+        <select id="f-graded" onchange="toggleGrade(this.value)">
+          <option value="0">No</option>
+          <option value="1">Sí</option>
+        </select>
+      </div>
+      <div id="grade-fields" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Empresa</label>
+            <select id="f-grading-company">
+              <option>PSA</option>
+              <option>BGS</option>
+              <option>SGC</option>
+              <option>CGC</option>
+              <option>otra</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Nota</label>
+            <input type="text" id="f-grade" placeholder="Ej: 9, 10, 9.5">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>💶 Precio de compra</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Precio pagado (€)</label>
+          <input type="number" id="f-price" placeholder="0.00" min="0" step="0.01" oninput="checkPrice(this)">
+          <div id="price-warn" style="display:none;font-size:12px;color:#e65100;margin-top:4px">⚠️ Sin precio no podrás calcular ROI ni beneficios</div>
+        </div>
+        <div class="form-group">
+          <label>Fecha de compra</label>
+          <input type="date" id="f-date" value="">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>📝 Notas</h2>
+      <div class="form-group">
+        <textarea id="f-notes" rows="3" placeholder="Cualquier detalle adicional..."></textarea>
+      </div>
+    </div>
+
+    <div id="alert-save"></div>
+    <button class="btn btn-primary" id="btn-save" onclick="saveCard()">💾 Guardar carta</button>
+    <div style="height:16px"></div>
+  </div>
+
+</div>
+
+<nav class="bottom-nav">
+  <a href="/"><span>🏠</span><span>Inicio</span></a>
+  <a href="/collection"><span>📚</span><span>Colección</span></a>
+  <a href="/add" class="add-btn active"><span>➕</span><span>Añadir</span></a>
+</nav>
+
+<script>
+let photoData = { front: null, back: null };
+let savedPhotos = { front: null, back: null };
+
+// Fecha de hoy por defecto
+document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+
+function previewPhoto(input, side) {
+  const file = input.files[0];
+  if (!file) return;
+  photoData[side] = file;
+  const area = document.getElementById(`area-${side}`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    area.innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:160px;object-fit:contain;border-radius:8px">`;
+    area.classList.add('has-photo');
+  };
+  reader.readAsDataURL(file);
+  if (photoData.front) document.getElementById('btn-identify').disabled = false;
+}
+
+async function identify() {
+  if (!photoData.front) return;
+  document.getElementById('step-photos').style.display = 'none';
+  document.getElementById('step-loading').style.display = 'block';
+
+  const fd = new FormData();
+  fd.append('front', photoData.front);
+  if (photoData.back) fd.append('back', photoData.back);
+
+  try {
+    const r = await fetch('/api/identify', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error al identificar');
+    savedPhotos = { front: data.photo_front, back: data.photo_back };
+    showForm(data);
+  } catch(e) {
+    document.getElementById('step-loading').style.display = 'none';
+    document.getElementById('step-photos').style.display = 'block';
+    document.getElementById('alert-photos').innerHTML = `<div class="alert alert-error">⚠️ ${e.message}</div>`;
+  }
+}
+
+function showForm(data) {
+  document.getElementById('step-photos').style.display = 'none';
+  document.getElementById('step-loading').style.display = 'none';
+  document.getElementById('step-form').style.display = 'block';
+
+  if (data) {
+    document.getElementById('identify-info').style.display = 'block';
+    set('f-player', data.player || '');
+    set('f-sport', data.sport || '');
+    set('f-team', data.team || '');
+    set('f-year', data.year || '');
+    set('f-card-number', data.card_number || '');
+    set('f-set', data.set_name || '');
+    set('f-variant', data.variant || '');
+    set('f-numbering', data.numbering || '');
+    set('f-notes', data.notes || '');
+    if (data.graded) {
+      document.getElementById('f-graded').value = '1';
+      toggleGrade('1');
+      set('f-grading-company', data.grading_company || 'PSA');
+      set('f-grade', data.grade || '');
+    }
+  }
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el && val !== null && val !== undefined) el.value = val;
+}
+
+function toggleGrade(val) {
+  document.getElementById('grade-fields').style.display = val === '1' ? 'block' : 'none';
+}
+
+function checkPrice(input) {
+  document.getElementById('price-warn').style.display = input.value ? 'none' : 'block';
+}
+
+async function saveCard() {
+  const player = document.getElementById('f-player').value.trim();
+  const price = document.getElementById('f-price').value;
+  if (!player) { alert('El nombre del jugador es obligatorio'); return; }
+  if (!price && !confirm('No has puesto precio de compra. ¿Guardar igualmente?')) return;
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  const graded = parseInt(document.getElementById('f-graded').value);
+  const payload = {
+    player,
+    year: parseInt(document.getElementById('f-year').value) || null,
+    sport: document.getElementById('f-sport').value || null,
+    team: document.getElementById('f-team').value.trim() || null,
+    set_name: document.getElementById('f-set').value.trim() || null,
+    variant: document.getElementById('f-variant').value.trim() || null,
+    card_number: document.getElementById('f-card-number').value.trim() || null,
+    numbering: document.getElementById('f-numbering').value.trim() || null,
+    graded,
+    grading_company: graded ? document.getElementById('f-grading-company').value : null,
+    grade: graded ? document.getElementById('f-grade').value.trim() : null,
+    purchase_price: parseFloat(price) || null,
+    purchase_date: document.getElementById('f-date').value || null,
+    notes: document.getElementById('f-notes').value.trim() || null,
+    photo_front: savedPhotos.front,
+    photo_back: savedPhotos.back,
+  };
+
+  try {
+    const r = await fetch('/api/cards', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    window.location.href = `/card/${data.id}`;
+  } catch(e) {
+    document.getElementById('alert-save').innerHTML = `<div class="alert alert-error">⚠️ ${e.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = '💾 Guardar carta';
+  }
+}
+</script>
+</body>
+</html>

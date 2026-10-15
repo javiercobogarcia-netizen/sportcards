@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#CC0000">
+<title>SportCards</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<div class="nav">
+  <span class="nav-icon">🃏</span>
+  <h1>SportCards</h1>
+  <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar Excel">📊</a>
+</div>
+
+<div class="container">
+
+  <div class="stats-grid" id="stats">
+    <div class="stat-card"><div class="stat-value" id="s-owned">—</div><div class="stat-label">Cartas en posesión</div></div>
+    <div class="stat-card highlight"><div class="stat-value" id="s-invested">—</div><div class="stat-label">Total invertido</div></div>
+    <div class="stat-card"><div class="stat-value" id="s-value">—</div><div class="stat-label">Valor actual</div></div>
+    <div class="stat-card"><div class="stat-value" id="s-profit">—</div><div class="stat-label">Beneficio realizado</div></div>
+  </div>
+
+  <h2 style="margin-bottom:12px;font-size:16px;color:#666">Últimas añadidas</h2>
+  <div id="recent-cards"></div>
+  <a href="/collection" class="btn btn-secondary" style="margin-top:8px">Ver colección completa →</a>
+
+</div>
+
+<nav class="bottom-nav">
+  <a href="/" class="active"><span>🏠</span><span>Inicio</span></a>
+  <a href="/collection"><span>📚</span><span>Colección</span></a>
+  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
+</nav>
+
+<script>
+async function loadStats() {
+  const r = await fetch('/api/stats');
+  const s = await r.json();
+  document.getElementById('s-owned').textContent = s.owned || 0;
+  document.getElementById('s-invested').textContent = fmt(s.total_invested);
+  document.getElementById('s-value').textContent = fmt(s.current_value);
+  const profit = s.total_profit || 0;
+  const el = document.getElementById('s-profit');
+  el.textContent = fmt(profit);
+  el.className = 'stat-value ' + (profit >= 0 ? 'profit-positive' : 'profit-negative');
+}
+
+async function loadRecent() {
+  const r = await fetch('/api/cards?status=owned');
+  const cards = await r.json();
+  const container = document.getElementById('recent-cards');
+  const recent = cards.slice(0, 5);
+  if (!recent.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🃏</div><p>Aún no tienes cartas.<br>Añade tu primera carta.</p><a href="/add" class="btn btn-primary" style="max-width:240px;margin:0 auto">Añadir primera carta</a></div>';
+    return;
+  }
+  container.innerHTML = recent.map(cardHTML).join('');
+}
+
+function cardHTML(c) {
+  const thumb = c.photo_front
+    ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">`
+    : `<div class="card-thumb-placeholder">🃏</div>`;
+  const badges = [
+    c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
+    c.numbering ? `<span class="badge badge-numbered">/${c.numbering}</span>` : '',
+  ].filter(Boolean).join(' ');
+  const price = c.purchase_price ? `${c.purchase_price.toFixed(2)} €` : '—';
+  return `<a href="/card/${c.id}" class="card-item">
+    ${thumb}
+    <div class="card-info">
+      <div class="card-player">${c.player}</div>
+      <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' · ')}</div>
+      ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
+      <div class="card-price">Compra: ${price}</div>
+    </div>
+    <span style="color:#ccc;font-size:20px">›</span>
+  </a>`;
+}
+
+function fmt(v) {
+  if (!v) return '0 €';
+  return parseFloat(v).toFixed(2) + ' €';
+}
+
+loadStats();
+loadRecent();
+</script>
+</body>
+</html>
