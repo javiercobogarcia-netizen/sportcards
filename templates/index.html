@@ -13,31 +13,36 @@
 <body>
 
 <div class="nav">
-  <a href="/logout" style="color:white;font-size:13px;text-decoration:none;opacity:.8">{{ username }} ↩</a>
+  <a href="/logout" style="color:white;font-size:13px;text-decoration:none;opacity:.8">{{ username }} ‚Ü©</a>
   <h1>SportCards</h1>
-  <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar Excel">📊</a>
+  <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar Excel">üìä</a>
 </div>
 
 <div class="container">
 
   <div class="stats-grid" id="stats">
-    <div class="stat-card"><div class="stat-value" id="s-owned">—</div><div class="stat-label">Cartas en posesión</div></div>
-    <div class="stat-card highlight"><div class="stat-value" id="s-invested">—</div><div class="stat-label">Total invertido</div></div>
-    <div class="stat-card"><div class="stat-value" id="s-value">—</div><div class="stat-label">Valor actual</div></div>
-    <div class="stat-card"><div class="stat-value" id="s-profit">—</div><div class="stat-label">Beneficio realizado</div></div>
+    <div class="stat-card"><div class="stat-value" id="s-owned">‚Äî</div><div class="stat-label">Cartas en posesi√≥n</div></div>
+    <div class="stat-card highlight"><div class="stat-value" id="s-invested">‚Äî</div><div class="stat-label">Total invertido</div></div>
+    <div class="stat-card"><div class="stat-value" id="s-value">‚Äî</div><div class="stat-label">Valor actual</div></div>
+    <div class="stat-card"><div class="stat-value" id="s-profit">‚Äî</div><div class="stat-label">Beneficio realizado</div></div>
   </div>
 
-  <h2 style="margin-bottom:12px;font-size:16px;color:#666">Últimas añadidas</h2>
+  <h2 style="margin-bottom:12px;font-size:16px;color:#666">√öltimas a√±adidas</h2>
   <div id="recent-cards"></div>
-  <a href="/collection" class="btn btn-secondary" style="margin-top:8px">Ver colección completa →</a>
+  <a href="/collection" class="btn btn-secondary" style="margin-top:8px">Ver colecci√≥n completa ‚Üí</a>
+
+  <div id="other-users-section" style="display:none;margin-top:24px">
+    <h2 style="margin-bottom:12px;font-size:16px;color:#666">üë• Colecciones de otros usuarios</h2>
+    <div id="other-users-list"></div>
+  </div>
 
 </div>
 
 <nav class="bottom-nav">
-  <a href="/" class="active"><span>🏠</span><span>Inicio</span></a>
-  <a href="/collection"><span>📚</span><span>Colección</span></a>
-  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
-  <a href="/stats"><span>📈</span><span>Stats</span></a>
+  <a href="/" class="active"><span>üè†</span><span>Inicio</span></a>
+  <a href="/collection"><span>üìö</span><span>Colecci√≥n</span></a>
+  <a href="/add" class="add-btn"><span>‚ûï</span><span>A√±adir</span></a>
+  <a href="/stats"><span>üìà</span><span>Stats</span></a>
 </nav>
 
 <script>
@@ -59,7 +64,7 @@ async function loadRecent() {
   const container = document.getElementById('recent-cards');
   const recent = cards.slice(0, 5);
   if (!recent.length) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">🃏</div><p>Aún no tienes cartas.<br>Añade tu primera carta.</p><a href="/add" class="btn btn-primary" style="max-width:240px;margin:0 auto">Añadir primera carta</a></div>';
+    container.innerHTML = '<div class="empty-state"><div class="icon">üÉè</div><p>A√∫n no tienes cartas.<br>A√±ade tu primera carta.</p><a href="/add" class="btn btn-primary" style="max-width:240px;margin:0 auto">A√±adir primera carta</a></div>';
     return;
   }
   container.innerHTML = recent.map(cardHTML).join('');
@@ -68,31 +73,45 @@ async function loadRecent() {
 function cardHTML(c) {
   const thumb = c.photo_front
     ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">`
-    : `<div class="card-thumb-placeholder">🃏</div>`;
+    : `<div class="card-thumb-placeholder">üÉè</div>`;
   const badges = [
     c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
     c.numbering ? `<span class="badge badge-numbered">/${c.numbering}</span>` : '',
   ].filter(Boolean).join(' ');
-  const price = c.purchase_price ? `${c.purchase_price.toFixed(2)} €` : '—';
+  const price = c.purchase_price ? `${c.purchase_price.toFixed(2)} ‚Ç¨` : '‚Äî';
   return `<a href="/card/${c.id}" class="card-item">
     ${thumb}
     <div class="card-info">
       <div class="card-player">${c.player}</div>
-      <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' · ')}</div>
+      <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' ¬∑ ')}</div>
       ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
       <div class="card-price">Compra: ${price}</div>
     </div>
-    <span style="color:#ccc;font-size:20px">›</span>
+    <span style="color:#ccc;font-size:20px">‚Ä∫</span>
   </a>`;
 }
 
 function fmt(v) {
-  if (!v) return '0 €';
-  return parseFloat(v).toFixed(2) + ' €';
+  if (!v) return '0 ‚Ç¨';
+  return parseFloat(v).toFixed(2) + ' ‚Ç¨';
+}
+
+async function loadOtherUsers() {
+  const r = await fetch('/api/users');
+  const users = await r.json();
+  if (!users.length) return;
+  document.getElementById('other-users-section').style.display = '';
+  document.getElementById('other-users-list').innerHTML = users.map(u =>
+    `<a href="/user/${u.username}" class="btn btn-secondary" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;justify-content:space-between">
+      <span>üìö Colecci√≥n de <strong>${u.username}</strong></span>
+      <span style="color:#ccc">‚Ä∫</span>
+    </a>`
+  ).join('');
 }
 
 loadStats();
 loadRecent();
+loadOtherUsers();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
