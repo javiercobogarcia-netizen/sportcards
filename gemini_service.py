@@ -1,9 +1,8 @@
 import os
 import json
+import time
 from google import genai
 from google.genai import types
-from PIL import Image
-import io
 
 def identify_card(front_path, back_path=None):
     api_key = os.getenv('GEMINI_API_KEY')
@@ -11,8 +10,6 @@ def identify_card(front_path, back_path=None):
         return None, 'API key de Gemini no configurada'
 
     client = genai.Client(api_key=api_key)
-
-    contents = []
 
     prompt = """Eres un experto en cartas coleccionables: sport cards (Panini, Topps, Upper Deck, Prizm, Select, Immaculate, Optic, Chronicles, Bowman, Fleer, Donruss) Y cartas Pokémon (Base Set, Jungle, Fossil, Neo, EX, Diamond & Pearl, Black & White, XY, Sun & Moon, Sword & Shield, Scarlet & Violet, y todas las expansiones).
 
@@ -54,7 +51,7 @@ Devuelve SOLO un JSON válido (sin texto, sin markdown):
 Si está en estuche de gradeo: graded=1, rellena grading_company y grade.
 Responde ÚNICAMENTE con el JSON."""
 
-    contents.append(prompt)
+    contents = [prompt]
 
     try:
         with open(front_path, 'rb') as f:
@@ -71,30 +68,33 @@ Responde ÚNICAMENTE con el JSON."""
         except Exception:
             pass
 
-    try:
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=contents,
-            config=types.GenerateContentConfig(
-                http_options=types.HttpOptions(timeout=60000)
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model='gemini-3.8-flash',
+                contents=contents,
             )
-        )
-        raw = response.text.strip()
+            raw = response.text.strip()
 
-        if raw.startswith('```'):
-            raw = raw.split('```')[1]
-            if raw.startswith('json'):
-                raw = raw[4:]
-            raw = raw.strip()
+            if raw.startswith('```'):
+                raw = raw.split('```')[1]
+                if raw.startswith('json'):
+                    raw = raw[4:]
+                raw = raw.strip()
 
-        data = json.loads(raw)
-        data['gemini_raw'] = response.text
-        return data, None
+            data = json.loads(raw)
+            data['gemini_raw'] = response.text
+            return data, None
 
-    except json.JSONDecodeError:
-        return {'gemini_raw': response.text, 'player': '', 'year': None,
-                'sport': None, 'team': None, 'set_name': None, 'variant': None,
-                'card_number': None, 'numbering': None, 'graded': 0,
-                'grading_company': None, 'grade': None, 'notes': None}, None
-    except Exception as e:
-        return None, str(e)
+        except json.JSONDecodeError:
+            return {'gemini_raw': response.text, 'player': '', 'year': None,
+                    'sport': None, 'team': None, 'set_name': None, 'variant': None,
+                    'card_number': None, 'numbering': None, 'graded': 0,
+                    'grading_company': None, 'grade': None, 'notes': None}, None
+        except Exception as e:
+            last_error = e
+            if attempt < 2:
+                time.sleep(3)
+
+    return None, str(last_error)
