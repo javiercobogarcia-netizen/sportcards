@@ -9,7 +9,7 @@ def identify_card(front_path, back_path=None):
         return None, 'API key de Gemini no configurada'
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3.8-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
 
     parts = []
 
@@ -67,7 +67,10 @@ Si está en estuche de gradeo: graded=1, rellena grading_company y grade.
 Responde ÚNICAMENTE con el JSON."""
 
     try:
-        response = model.generate_content([prompt] + parts)
+        response = model.generate_content(
+            [prompt] + parts,
+            request_options={'timeout': 60}
+        )
         raw = response.text.strip()
 
         if raw.startswith('```'):
