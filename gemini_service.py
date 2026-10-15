@@ -72,7 +72,7 @@ Responde ÚNICAMENTE con el JSON."""
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.0-flash',
                 contents=contents,
             )
             raw = response.text.strip()
