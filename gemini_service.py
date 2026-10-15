@@ -72,7 +72,7 @@ Responde ÚNICAMENTE con el JSON."""
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model='gemini-2.0-flash',
+                model='gemini-3.8-flash',
                 contents=contents,
             )
             raw = response.text.strip()
@@ -95,6 +95,6 @@ Responde ÚNICAMENTE con el JSON."""
         except Exception as e:
             last_error = e
             if attempt < 2:
-                time.sleep(2)
+                time.sleep(5)
 
     return None, str(last_error)
