@@ -362,6 +362,27 @@ def manifest():
 def service_worker():
     return send_from_directory('static', 'sw.js')
 
+@app.route('/admin/fix-rotations')
+@login_required
+def fix_rotations():
+    from PIL import Image, ImageOps
+    fixed = 0
+    errors = 0
+    for root, dirs, files in os.walk(UPLOAD_DIR):
+        for fname in files:
+            if not fname.lower().endswith(('.jpg', '.jpeg')):
+                continue
+            fpath = os.path.join(root, fname)
+            try:
+                img = Image.open(fpath)
+                img2 = ImageOps.exif_transpose(img)
+                if img2 != img:
+                    img2.save(fpath, 'JPEG', quality=75, optimize=True)
+                    fixed += 1
+            except Exception:
+                errors += 1
+    return jsonify({'fixed': fixed, 'errors': errors})
+
 def search_pokemon_price(name, set_name, card_number):
     """Busca precio en eBay para cartas Pokémon."""
     return search_card_price(name, None, set_name, None, None, None)
