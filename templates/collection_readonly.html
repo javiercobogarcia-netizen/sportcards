@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#CC0000">
+<title>Colecci√≥n de {{ target_username }} ‚Äî SportCards</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+.filters-panel { background: white; border-radius: var(--radius); padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.filters-panel h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+.filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.filter-row select { padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text); -webkit-appearance: none; outline: none; width: 100%; }
+.filter-row select:focus { border-color: var(--red); }
+.filter-clear { font-size: 12px; color: var(--red); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; }
+.readonly-banner { background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: #e65100; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="/" class="nav-back">‚Äπ</a>
+  <h1>üìö {{ target_username }}</h1>
+</div>
+
+<div class="container">
+
+  <div class="readonly-banner">
+    üëÅÔ∏è Est√°s viendo la colecci√≥n de <strong>{{ target_username }}</strong> en modo solo lectura.
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Buscar jugador, set, equipo..." oninput="loadCards()">
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-status="" onclick="setFilter(this,'')">Todas</button>
+    <button class="filter-tab" data-status="owned" onclick="setFilter(this,'owned')">En posesi√≥n</button>
+    <button class="filter-tab" data-status="sold" onclick="setFilter(this,'sold')">Vendidas</button>
+  </div>
+
+  <div class="filters-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 style="margin:0">üîΩ Filtros</h3>
+      <button class="filter-clear" onclick="clearFilters()">Limpiar todo</button>
+    </div>
+    <div class="filter-row">
+      <select id="f-sport" onchange="loadCards()"><option value="">Todos los deportes</option></select>
+      <select id="f-year" onchange="loadCards()"><option value="">Todos los a√±os</option></select>
+    </div>
+    <select id="f-set" onchange="loadCards()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;-webkit-appearance:none;outline:none">
+      <option value="">Todas las colecciones</option>
+    </select>
+  </div>
+
+  <div id="result-count" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
+  <div id="cards-list"></div>
+
+</div>
+
+<nav class="bottom-nav">
+  <a href="/"><span>üè†</span><span>Inicio</span></a>
+  <a href="/collection"><span>üìö</span><span>Mi colecci√≥n</span></a>
+  <a href="/add" class="add-btn"><span>‚ûï</span><span>A√±adir</span></a>
+  <a href="/stats"><span>üìà</span><span>Stats</span></a>
+</nav>
+
+<script>
+const TARGET = '{{ target_username }}';
+let currentStatus = '';
+
+async function loadFilterOptions() {
+  const r = await fetch(`/api/user/${TARGET}/filter-options`);
+  const opts = await r.json();
+  const sportSel = document.getElementById('f-sport');
+  const yearSel = document.getElementById('f-year');
+  const setSel = document.getElementById('f-set');
+  opts.sports.forEach(s => sportSel.innerHTML += `<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`);
+  opts.years.forEach(y => yearSel.innerHTML += `<option value="${y}">${y}</option>`);
+  opts.sets.forEach(s => setSel.innerHTML += `<option value="${s}">${s}</option>`);
+}
+
+function setFilter(btn, status) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentStatus = status;
+  loadCards();
+}
+
+function clearFilters() {
+  document.getElementById('f-sport').value = '';
+  document.getElementById('f-year').value = '';
+  document.getElementById('f-set').value = '';
+  document.getElementById('search').value = '';
+  loadCards();
+}
+
+async function loadCards() {
+  const q = document.getElementById('search').value.trim();
+  const sport = document.getElementById('f-sport').value;
+  const year = document.getElementById('f-year').value;
+  const set = document.getElementById('f-set').value;
+
+  const params = new URLSearchParams();
+  if (currentStatus) params.append('status', currentStatus);
+  if (q) params.append('q', q);
+  if (sport) params.append('sport', sport);
+  if (year) params.append('year', year);
+  if (set) params.append('set', set);
+
+  const r = await fetch(`/api/user/${TARGET}/cards?` + params);
+  const cards = await r.json();
+  document.getElementById('result-count').textContent = cards.length ? `${cards.length} carta${cards.length!==1?'s':''}` : '';
+
+  const container = document.getElementById('cards-list');
+  if (!cards.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">üÉè</div><p>No hay cartas${q ? ' para "'+q+'"' : ''}.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = cards.map(c => {
+    const thumb = c.photo_front
+      ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">`
+      : `<div class="card-thumb-placeholder">üÉè</div>`;
+    const numbering = c.numbering ? String(c.numbering).replace(/^\/+/,'') : null;
+    const badges = [
+      c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
+      numbering ? `<span class="badge badge-numbered">/${numbering}</span>` : '',
+      c.status === 'sold' ? `<span class="badge badge-sold">Vendida</span>` : '',
+    ].filter(Boolean).join(' ');
+
+    let priceHtml = '';
+    if (c.status === 'sold' && c.sale_price && c.purchase_price) {
+      const profit = c.sale_price - c.purchase_price;
+      const roi = ((profit / c.purchase_price) * 100).toFixed(1);
+      priceHtml = `<div class="card-price">Vendida: ${c.sale_price.toFixed(2)} ‚Ç¨ <span class="${profit>=0?'roi-positive':'roi-negative'}">(${profit>=0?'+':''}${profit.toFixed(2)} ‚Ç¨ / ${roi}%)</span></div>`;
+    } else {
+      priceHtml = `<div class="card-price">Compra: ${c.purchase_price ? c.purchase_price.toFixed(2)+' ‚Ç¨' : '‚Äî'}${c.market_price ? ' ¬∑ Mercado: '+c.market_price.toFixed(2)+' ‚Ç¨' : ''}</div>`;
+    }
+
+    return `<div class="card-item" style="cursor:default">
+      ${thumb}
+      <div class="card-info">
+        <div class="card-player">${c.player}</div>
+        <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' ¬∑ ')}</div>
+        ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
+        ${priceHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+loadFilterOptions();
+loadCards();
+</script>
+</body>
+</html>
