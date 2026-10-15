@@ -54,8 +54,26 @@ def save_photo(file, subfolder):
     filename = f'{uuid.uuid4().hex}.jpg'
     path = os.path.join(dest_dir, filename)
     img = Image.open(file.stream)
-    from PIL import ImageOps
-    img = ImageOps.exif_transpose(img)
+    try:
+        exif_data = img._getexif()
+        if exif_data:
+            orientation = exif_data.get(274)
+            if orientation == 2:
+                img = img.transpose(Image.FLIP_LEFT_RIGHT)
+            elif orientation == 3:
+                img = img.rotate(180, expand=True)
+            elif orientation == 4:
+                img = img.rotate(180, expand=True).transpose(Image.FLIP_LEFT_RIGHT)
+            elif orientation == 5:
+                img = img.rotate(-90, expand=True).transpose(Image.FLIP_LEFT_RIGHT)
+            elif orientation == 6:
+                img = img.rotate(-90, expand=True)
+            elif orientation == 7:
+                img = img.rotate(90, expand=True).transpose(Image.FLIP_LEFT_RIGHT)
+            elif orientation == 8:
+                img = img.rotate(90, expand=True)
+    except Exception:
+        pass
     img = img.convert('RGB')
     img.thumbnail((1200, 1200), Image.LANCZOS)
     img.save(path, 'JPEG', quality=75, optimize=True, exif=b'')
