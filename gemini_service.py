@@ -9,10 +9,7 @@ def identify_card(front_path, back_path=None):
     if not api_key or api_key == 'TU_CLAVE_AQUI':
         return None, 'API key de Gemini no configurada'
 
-    client = genai.Client(
-        api_key=api_key,
-        http_options=types.HttpOptions(api_version='v1', timeout=30000)
-    )
+    client = genai.Client(api_key=api_key)
 
     prompt = """Eres un experto en cartas coleccionables: sport cards (Panini, Topps, Upper Deck, Prizm, Select, Immaculate, Optic, Chronicles, Bowman, Fleer, Donruss) Y cartas Pokémon (Base Set, Jungle, Fossil, Neo, EX, Diamond & Pearl, Black & White, XY, Sun & Moon, Sword & Shield, Scarlet & Violet, y todas las expansiones).
 
@@ -98,6 +95,6 @@ Responde ÚNICAMENTE con el JSON."""
         except Exception as e:
             last_error = e
             if attempt < 2:
-                time.sleep(3)
+                time.sleep(2)
 
     return None, str(last_error)
