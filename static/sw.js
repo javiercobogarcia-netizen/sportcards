@@ -1,4 +1,4 @@
-const CACHE = 'sportcards-v2';
+const CACHE = 'sportcards-v3';
 const OFFLINE_URLS = ['/', '/collection', '/static/css/app.css'];
 
 self.addEventListener('install', e => {
@@ -16,6 +16,9 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Never intercept non-GET requests (POST bodies get consumed and arrive empty)
+  if (e.request.method !== 'GET') return;
+
   const url = new URL(e.request.url);
   // API calls: network first, no cache
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) {
