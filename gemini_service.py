@@ -1,30 +1,18 @@
-import google.generativeai as genai
 import os
 import json
+from google import genai
+from google.genai import types
 from PIL import Image
+import io
 
 def identify_card(front_path, back_path=None):
     api_key = os.getenv('GEMINI_API_KEY')
     if not api_key or api_key == 'TU_CLAVE_AQUI':
         return None, 'API key de Gemini no configurada'
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    client = genai.Client(api_key=api_key)
 
-    parts = []
-
-    try:
-        img_front = Image.open(front_path)
-        parts.append(img_front)
-    except Exception as e:
-        return None, f'Error leyendo foto delantera: {e}'
-
-    if back_path and os.path.exists(back_path):
-        try:
-            img_back = Image.open(back_path)
-            parts.append(img_back)
-        except Exception:
-            pass
+    contents = []
 
     prompt = """Eres un experto en cartas coleccionables: sport cards (Panini, Topps, Upper Deck, Prizm, Select, Immaculate, Optic, Chronicles, Bowman, Fleer, Donruss) Y cartas Pokémon (Base Set, Jungle, Fossil, Neo, EX, Diamond & Pearl, Black & White, XY, Sun & Moon, Sword & Shield, Scarlet & Violet, y todas las expansiones).
 
@@ -66,10 +54,30 @@ Devuelve SOLO un JSON válido (sin texto, sin markdown):
 Si está en estuche de gradeo: graded=1, rellena grading_company y grade.
 Responde ÚNICAMENTE con el JSON."""
 
+    contents.append(prompt)
+
     try:
-        response = model.generate_content(
-            [prompt] + parts,
-            request_options={'timeout': 60}
+        with open(front_path, 'rb') as f:
+            front_bytes = f.read()
+        contents.append(types.Part.from_bytes(data=front_bytes, mime_type='image/jpeg'))
+    except Exception as e:
+        return None, f'Error leyendo foto delantera: {e}'
+
+    if back_path and os.path.exists(back_path):
+        try:
+            with open(back_path, 'rb') as f:
+                back_bytes = f.read()
+            contents.append(types.Part.from_bytes(data=back_bytes, mime_type='image/jpeg'))
+        except Exception:
+            pass
+
+    try:
+        response = client.models.generate_content(
+            model='gemini-3.8-flash',
+            contents=contents,
+            config=types.GenerateContentConfig(
+                http_options=types.HttpOptions(timeout=60000)
+            )
         )
         raw = response.text.strip()
 
