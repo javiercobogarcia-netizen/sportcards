@@ -220,13 +220,13 @@ def api_identify():
     front_file = request.files.get('front')
     back_file = request.files.get('back')
 
-    if not front_file or not allowed_file(front_file.filename, front_file.content_type):
+    if not front_file:
         return jsonify({'error': 'Foto delantera requerida'}), 400
 
     front_path, front_rel = save_photo(front_file, 'fronts')
     back_path = None
     back_rel = None
-    if back_file and allowed_file(back_file.filename, back_file.content_type):
+    if back_file:
         back_path, back_rel = save_photo(back_file, 'backs')
 
     data, error = identify_card(front_path, back_path)
