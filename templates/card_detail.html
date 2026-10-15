@@ -61,6 +61,26 @@
     </div>
     <div class="form-group"><label>Notas</label><textarea id="e-notes" rows="2"></textarea></div>
 
+    <div style="border-top:1px solid #eee;margin:16px 0;padding-top:16px">
+      <p style="font-size:13px;font-weight:600;margin-bottom:10px">📸 Cambiar fotos (opcional)</p>
+      <input type="file" id="e-inp-front" accept="image/*" capture="environment" style="display:none" onchange="previewEditPhoto(this,'front')">
+      <input type="file" id="e-inp-back" accept="image/*" capture="environment" style="display:none" onchange="previewEditPhoto(this,'back')">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="text-align:center">
+          <div id="e-prev-front" style="min-height:80px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;overflow:hidden">
+            <span style="font-size:12px;color:#999">Sin cambios</span>
+          </div>
+          <button type="button" onclick="document.getElementById('e-inp-front').click()" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer">📷 Delantera</button>
+        </div>
+        <div style="text-align:center">
+          <div id="e-prev-back" style="min-height:80px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;overflow:hidden">
+            <span style="font-size:12px;color:#999">Sin cambios</span>
+          </div>
+          <button type="button" onclick="document.getElementById('e-inp-back').click()" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer">📷 Trasera</button>
+        </div>
+      </div>
+    </div>
+
     <div id="edit-alert"></div>
     <button class="btn btn-primary" onclick="saveEdit()">💾 Guardar cambios</button>
   </div>
@@ -223,9 +243,28 @@ async function sellCard() {
   window.location.reload();
 }
 
+let editPhotos = { front: null, back: null };
+
+function previewEditPhoto(input, side) {
+  const file = input.files[0];
+  if (!file) return;
+  editPhotos[side] = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById(`e-prev-${side}`);
+    prev.innerHTML = `<img src="${e.target.result}" style="max-height:80px;max-width:100%;object-fit:contain">`;
+  };
+  reader.readAsDataURL(file);
+}
+
 function toggleEdit() {
   const modal = document.getElementById('edit-modal');
   if (modal.style.display === 'none') {
+    editPhotos = { front: null, back: null };
+    document.getElementById('e-prev-front').innerHTML = '<span style="font-size:12px;color:#999">Sin cambios</span>';
+    document.getElementById('e-prev-back').innerHTML = '<span style="font-size:12px;color:#999">Sin cambios</span>';
+    document.getElementById('e-inp-front').value = '';
+    document.getElementById('e-inp-back').value = '';
     const c = card;
     document.getElementById('e-player').value = c.player || '';
     document.getElementById('e-sport').value = c.sport || '';
@@ -271,8 +310,17 @@ async function saveEdit() {
     notes: document.getElementById('e-notes').value.trim() || null,
   };
   const r = await fetch(`/api/card/${CARD_ID}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-  if (r.ok) { toggleEdit(); await load(); }
-  else { document.getElementById('edit-alert').innerHTML = '<div class="alert alert-error">Error al guardar</div>'; }
+  if (!r.ok) { document.getElementById('edit-alert').innerHTML = '<div class="alert alert-error">Error al guardar</div>'; return; }
+
+  if (editPhotos.front || editPhotos.back) {
+    const fd = new FormData();
+    if (editPhotos.front) fd.append('front', editPhotos.front, editPhotos.front.name || 'photo.jpg');
+    if (editPhotos.back) fd.append('back', editPhotos.back, editPhotos.back.name || 'photo.jpg');
+    const rp = await fetch(`/api/card/${CARD_ID}/photos`, {method:'POST', body:fd});
+    if (!rp.ok) { document.getElementById('edit-alert').innerHTML = '<div class="alert alert-error">Error al subir fotos</div>'; return; }
+  }
+
+  toggleEdit(); await load();
 }
 
 load();
