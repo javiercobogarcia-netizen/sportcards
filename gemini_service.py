@@ -11,7 +11,7 @@ def identify_card(front_path, back_path=None):
 
     client = genai.Client(
         api_key=api_key,
-        http_options=types.HttpOptions(timeout=30000)
+        http_options=types.HttpOptions(api_version='v1', timeout=30000)
     )
 
     prompt = """Eres un experto en cartas coleccionables: sport cards (Panini, Topps, Upper Deck, Prizm, Select, Immaculate, Optic, Chronicles, Bowman, Fleer, Donruss) Y cartas Pokémon (Base Set, Jungle, Fossil, Neo, EX, Diamond & Pearl, Black & White, XY, Sun & Moon, Sword & Shield, Scarlet & Violet, y todas las expansiones).
