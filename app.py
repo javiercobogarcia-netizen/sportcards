@@ -58,7 +58,7 @@ def save_photo(file, subfolder):
     img = ImageOps.exif_transpose(img)
     img = img.convert('RGB')
     img.thumbnail((1200, 1200), Image.LANCZOS)
-    img.save(path, 'JPEG', quality=75, optimize=True)
+    img.save(path, 'JPEG', quality=75, optimize=True, exif=b'')
     return path, f'uploads/{subfolder}/{filename}'
 
 # --- Páginas ---
