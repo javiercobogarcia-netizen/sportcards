@@ -48,32 +48,16 @@ def current_user_id():
     return session.get('user_id', 1)
 
 def save_photo(file, subfolder):
-    from PIL import Image
+    import io
+    from PIL import Image, ImageOps
     dest_dir = os.path.join(UPLOAD_DIR, subfolder)
     os.makedirs(dest_dir, exist_ok=True)
     filename = f'{uuid.uuid4().hex}.jpg'
     path = os.path.join(dest_dir, filename)
-    img = Image.open(file.stream)
-    try:
-        exif_data = img._getexif()
-        if exif_data:
-            orientation = exif_data.get(274)
-            if orientation == 2:
-                img = img.transpose(Image.FLIP_LEFT_RIGHT)
-            elif orientation == 3:
-                img = img.rotate(180, expand=True)
-            elif orientation == 4:
-                img = img.rotate(180, expand=True).transpose(Image.FLIP_LEFT_RIGHT)
-            elif orientation == 5:
-                img = img.rotate(-90, expand=True).transpose(Image.FLIP_LEFT_RIGHT)
-            elif orientation == 6:
-                img = img.rotate(-90, expand=True)
-            elif orientation == 7:
-                img = img.rotate(90, expand=True).transpose(Image.FLIP_LEFT_RIGHT)
-            elif orientation == 8:
-                img = img.rotate(90, expand=True)
-    except Exception:
-        pass
+    raw = file.read()
+    img = Image.open(io.BytesIO(raw))
+    img.load()
+    img = ImageOps.exif_transpose(img)
     img = img.convert('RGB')
     img.thumbnail((1200, 1200), Image.LANCZOS)
     img.save(path, 'JPEG', quality=75, optimize=True, exif=b'')
