@@ -22,7 +22,7 @@ app = Flask(__name__)
 CORS(app)
 app.secret_key = os.getenv('SECRET_KEY', 'sportcards-2024')
 
-# Inicializar BD siempre (también con gunicorn en producción)
+# Inicializar BD siempre (tambi√©n con gunicorn en producci√≥n)
 _init_db()
 
 DATA_DIR = os.getenv('DATA_DIR', os.path.dirname(__file__))
@@ -55,7 +55,7 @@ def save_photo(file, subfolder):
     img.save(path, 'JPEG', quality=75, optimize=True)
     return path, f'uploads/{subfolder}/{filename}'
 
-# --- Páginas ---
+# --- P√°ginas ---
 
 @app.route('/login', methods=['GET'])
 def login_page():
@@ -69,10 +69,10 @@ def do_login():
     username = data.get('username', '').strip()
     password = data.get('password', '')
     if not username or not password:
-        return jsonify({'error': 'Usuario y contraseña requeridos'}), 400
+        return jsonify({'error': 'Usuario y contrase√±a requeridos'}), 400
     user = verify_user(username, password)
     if not user:
-        return jsonify({'error': 'Usuario o contraseña incorrectos'}), 401
+        return jsonify({'error': 'Usuario o contrase√±a incorrectos'}), 401
     session['user_id'] = user['id']
     session['username'] = user['username']
     return jsonify({'ok': True, 'username': user['username']})
@@ -83,9 +83,9 @@ def do_register():
     username = data.get('username', '').strip()
     password = data.get('password', '')
     if not username or not password:
-        return jsonify({'error': 'Usuario y contraseña requeridos'}), 400
+        return jsonify({'error': 'Usuario y contrase√±a requeridos'}), 400
     if len(password) < 4:
-        return jsonify({'error': 'La contraseña debe tener al menos 4 caracteres'}), 400
+        return jsonify({'error': 'La contrase√±a debe tener al menos 4 caracteres'}), 400
     user_id, error = create_user(username, password)
     if error:
         return jsonify({'error': error}), 400
@@ -123,7 +123,52 @@ def card_detail(card_id):
 def stats_page():
     return render_template('stats.html', username=session.get('username'))
 
+@app.route('/user/<username>')
+@login_required
+def user_collection(username):
+    from database import get_user_by_username
+    target = get_user_by_username(username)
+    if not target:
+        return 'Usuario no encontrado', 404
+    if target['id'] == session.get('user_id'):
+        return redirect(url_for('collection_page'))
+    return render_template('collection_readonly.html',
+                           target_username=target['username'],
+                           viewer_username=session.get('username'))
+
 # --- API ---
+
+@app.route('/api/users')
+@login_required
+def api_users():
+    users = get_all_users()
+    me = session.get('user_id')
+    return jsonify([u for u in users if u['id'] != me])
+
+@app.route('/api/user/<username>/cards')
+@login_required
+def api_user_cards(username):
+    from database import get_user_by_username
+    target = get_user_by_username(username)
+    if not target:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    status = request.args.get('status')
+    search = request.args.get('q')
+    sport = request.args.get('sport')
+    year = request.args.get('year')
+    set_name = request.args.get('set')
+    cards = get_all_cards(status=status, search=search, sport=sport, year=year,
+                          set_name=set_name, user_id=target['id'])
+    return jsonify(cards)
+
+@app.route('/api/user/<username>/filter-options')
+@login_required
+def api_user_filter_options(username):
+    from database import get_user_by_username
+    target = get_user_by_username(username)
+    if not target:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    return jsonify(get_filter_options(user_id=target['id']))
 
 @app.route('/api/stats')
 @login_required
@@ -187,7 +232,7 @@ def api_identify():
     data['photo_front'] = front_rel
     data['photo_back'] = back_rel
 
-    # Precio de eBay automático (si está configurado)
+    # Precio de eBay autom√°tico (si est√° configurado)
     if data.get('player') and data.get('sport') != 'pokemon':
         result, _ = search_card_price(
             data.get('player'), data.get('year'), data.get('set_name'),
@@ -306,7 +351,7 @@ def service_worker():
     return send_from_directory('static', 'sw.js')
 
 def search_pokemon_price(name, set_name, card_number):
-    """Busca precio en eBay para cartas Pokémon."""
+    """Busca precio en eBay para cartas Pok√©mon."""
     return search_card_price(name, None, set_name, None, None, None)
 
 if __name__ == '__main__':
