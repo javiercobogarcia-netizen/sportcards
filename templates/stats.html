@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#CC0000">
+<title>Estadísticas — SportCards</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+.stat-big { background: white; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.stat-big-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.stat-big-value { font-size: 28px; font-weight: 700; color: var(--text); }
+.stat-big-value.red { color: var(--red); }
+.stat-big-value.green { color: #2e7d32; }
+.sport-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.sport-row:last-child { border-bottom: none; }
+.sport-bar { height: 6px; background: var(--red); border-radius: 3px; margin-top: 4px; }
+.top-card { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.top-card:last-child { border-bottom: none; }
+.top-card img { width: 40px; height: 55px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.top-card-placeholder { width: 40px; height: 55px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.gain-positive { color: #2e7d32; font-weight: 700; }
+.gain-negative { color: #c62828; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="/" class="nav-back">‹</a>
+  <h1>Estadísticas</h1>
+  <span style="color:white;font-size:13px;opacity:.8">{{ username }}</span>
+</div>
+
+<div class="container" id="content">
+  <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/"><span>🏠</span><span>Inicio</span></a>
+  <a href="/collection"><span>📚</span><span>Colección</span></a>
+  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
+  <a href="/stats" class="active"><span>📈</span><span>Stats</span></a>
+</nav>
+
+<script>
+function fmt(v) {
+  if (v === null || v === undefined) return '—';
+  return parseFloat(v).toFixed(2) + ' €';
+}
+
+async function load() {
+  const r = await fetch('/api/stats/detail');
+  const d = await r.json();
+  const g = d.general;
+  const sports = d.by_sport;
+  const top = d.top_cards;
+
+  const profit = g.total_profit || 0;
+  const latent = (g.current_value || 0) - (g.total_invested || 0);
+  const maxSport = sports.length ? Math.max(...sports.map(s => s.total)) : 1;
+
+  document.getElementById('content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+      <div class="stat-big">
+        <div class="stat-big-label">Cartas en posesión</div>
+        <div class="stat-big-value red">${g.owned || 0}</div>
+      </div>
+      <div class="stat-big">
+        <div class="stat-big-label">Total invertido</div>
+        <div class="stat-big-value">${fmt(g.total_invested)}</div>
+      </div>
+      <div class="stat-big">
+        <div class="stat-big-label">Valor actual</div>
+        <div class="stat-big-value">${fmt(g.current_value)}</div>
+      </div>
+      <div class="stat-big">
+        <div class="stat-big-label">Plus/menos latente</div>
+        <div class="stat-big-value ${latent >= 0 ? 'green' : 'red'}">${latent >= 0 ? '+' : ''}${fmt(latent)}</div>
+      </div>
+    </div>
+
+    <div class="stat-big" style="margin-bottom:4px">
+      <div class="stat-big-label" style="margin-bottom:2px">Beneficio realizado (vendidas)</div>
+      <div class="stat-big-value ${profit >= 0 ? 'green' : 'red'}" style="font-size:22px">${profit >= 0 ? '+' : ''}${fmt(profit)}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${g.sold || 0} cartas vendidas · ${g.total_cards || 0} en total</div>
+    </div>
+
+    ${sports.length ? `
+    <div class="form-section" style="margin-bottom:12px">
+      <h2>Por deporte</h2>
+      ${sports.map(s => `
+        <div class="sport-row">
+          <div style="flex:1">
+            <div style="font-weight:600;text-transform:capitalize">${s.sport}</div>
+            <div class="sport-bar" style="width:${Math.round((s.total/maxSport)*100)}%"></div>
+          </div>
+          <div style="text-align:right;margin-left:12px">
+            <div style="font-weight:700;color:var(--red)">${s.total}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${fmt(s.invested)}</div>
+          </div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    ${top.length ? `
+    <div class="form-section">
+      <h2>Mejores inversiones actuales</h2>
+      ${top.map((c, i) => {
+        const gain = (c.market_price || c.purchase_price || 0) - (c.purchase_price || 0);
+        const roi = c.purchase_price ? ((gain / c.purchase_price) * 100).toFixed(1) : null;
+        return `<a href="/card/${c.id}" class="top-card" style="text-decoration:none;color:inherit">
+          ${c.photo_front ? `<img src="/${c.photo_front}" loading="lazy">` : `<div class="top-card-placeholder">🃏</div>`}
+          <div style="flex:1">
+            <div style="font-weight:600">${c.player}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${[c.year, c.set_name].filter(Boolean).join(' · ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="${gain >= 0 ? 'gain-positive' : 'gain-negative'}">${gain >= 0 ? '+' : ''}${fmt(gain)}</div>
+            ${roi ? `<div style="font-size:11px;color:var(--text-muted)">${roi}%</div>` : ''}
+          </div>
+        </a>`;
+      }).join('')}
+    </div>` : ''}
+  `;
+}
+
+load();
+</script>
+</body>
+</html>

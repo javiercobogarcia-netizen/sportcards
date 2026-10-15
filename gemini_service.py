@@ -1,7 +1,6 @@
 import google.generativeai as genai
 import os
 import json
-import base64
 from PIL import Image
 
 def identify_card(front_path, back_path=None):
@@ -10,7 +9,7 @@ def identify_card(front_path, back_path=None):
         return None, 'API key de Gemini no configurada'
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3.8-flash')
+    model = genai.GenerativeModel('gemini-2.0-flash')
 
     parts = []
 
@@ -27,33 +26,45 @@ def identify_card(front_path, back_path=None):
         except Exception:
             pass
 
-    prompt = """Eres un experto en cartas de deporte (sport cards), especialmente de Panini, Topps, Upper Deck, Prizm, Select, Immaculate, Impeccable, National Treasures, Optic, Chronicles y otras colecciones.
+    prompt = """Eres un experto en cartas coleccionables: sport cards (Panini, Topps, Upper Deck, Prizm, Select, Immaculate, Optic, Chronicles, Bowman, Fleer, Donruss) Y cartas Pokémon (Base Set, Jungle, Fossil, Neo, EX, Diamond & Pearl, Black & White, XY, Sun & Moon, Sword & Shield, Scarlet & Violet, y todas las expansiones).
 
-Analiza DETENIDAMENTE estas imágenes e identifica todos los datos. Presta especial atención a:
-- El nombre del INSERT o VARIANTE que aparece en la carta (ej: Watercolors, Shimmer, Gold Vinyl, Refractor, Prizm, Holo, Silver, Base, Rookie, Auto, Patch, Logoman, etc.)
-- Si hay autógrafo (firma) visible → indica "Autograph" o "Auto" en la variante
-- Si hay pieza de jersey/parche → indica "Patch" o "Memorabilia"
-- La numeración exacta que aparece impresa (ej: 05/25, 12/99, 1/1)
-- El año de la temporada (puede aparecer como "2024-25", "Season 2024-25", etc.)
+Analiza DETENIDAMENTE estas imágenes e identifica la carta. Determina PRIMERO si es una carta Pokémon o una sport card.
 
-Devuelve SOLO un JSON válido con esta estructura exacta (sin texto adicional, sin markdown):
+Para SPORT CARDS presta atención a:
+- Nombre completo del jugador
+- Variante/insert: Watercolors, Shimmer, Gold Vinyl, Refractor, Prizm, Holo, Silver, Base, Rookie (RC), Auto (Autograph/firma), Patch, Logoman, Signatures, RPA (Rookie Patch Auto)
+- Si hay firma visible → variante incluye "Auto" o "Signatures"
+- Si hay pieza de jersey/parche tela → variante incluye "Patch" o "Memorabilia"
+- Numeración exacta impresa (ej: 05/25 → numbering: "25", número específico en notes)
+- Rookie Card: si hay etiqueta RC o es primera carta del jugador → variant incluye "Rookie" o "RC"
+
+Para CARTAS POKÉMON:
+- Nombre del Pokémon en campo "player"
+- Expansión completa en "set_name" (ej: "Pokémon Scarlet & Violet — Obsidian Flames", "Pokémon Base Set")
+- Variante: Holo, Reverse Holo, Full Art, Secret Rare, Ultra Rare, Gold, Rainbow, VMAX, VSTAR, ex, EX, GX, V, Amazing Rare, Illustration Rare, Special Illustration Rare
+- Número de carta (ej: "025/198") en card_number
+- sport: "pokemon"
+- team: tipo del Pokémon (ej: "Fire", "Water", "Psychic")
+- Si está en estuche de gradeo (PSA, CGC, BGS): graded=1
+
+Devuelve SOLO un JSON válido (sin texto, sin markdown):
 {
-  "player": "nombre completo del jugador",
+  "player": "nombre del jugador o Pokémon",
   "year": 2024,
-  "sport": "fútbol|baloncesto|béisbol|fútbol americano|hockey|otro",
-  "team": "nombre del equipo",
-  "set_name": "nombre COMPLETO del set incluyendo la marca (ej: Panini Prizm EuroLeague, Topps Chrome, Panini Impeccable EuroLeague)",
-  "variant": "nombre del insert/variante/parallel (ej: Watercolors Signatures, Gold Refractor, Silver Prizm, Base, Rookie Auto Patch). Si tiene autógrafo incluye 'Auto' o 'Signatures'. NUNCA pongas null si hay alguna variante visible.",
-  "card_number": "número de carta si aparece en la carta (ej: WCS-GON, #123)",
-  "numbering": "solo el número máximo de la tirada SIN barra (ej: si pone 05/25 escribe 25, si pone /99 escribe 99, si es 1/1 escribe 1). null si no está numerada.",
+  "sport": "fútbol|baloncesto|béisbol|fútbol americano|hockey|pokemon|otro",
+  "team": "equipo del jugador o tipo del Pokémon",
+  "set_name": "nombre COMPLETO del set incluyendo marca",
+  "variant": "variante/parallel/insert. Nunca null si hay alguna. Para Pokémon incluir rareza.",
+  "card_number": "número de carta (ej: WCS-GON, #123, 025/198)",
+  "numbering": "solo el número máximo SIN barra (ej: 25 para /25, 1 para 1/1). null si no está numerada.",
   "graded": 0,
   "grading_company": null,
   "grade": null,
-  "notes": "detalle adicional: si está numerada indica el número específico (ej: 05/25), si tiene autógrafo menciónalo, cualquier dato relevante"
+  "notes": "detalles: número específico si numerada (ej: carta 05 de 25), autógrafo, RC, cualquier dato relevante"
 }
 
-Si la carta está en un estuche de gradeo (PSA, BGS, SGC, CGC): graded=1, rellena grading_company y grade.
-Responde ÚNICAMENTE con el JSON, sin explicaciones, sin bloques de código."""
+Si está en estuche de gradeo: graded=1, rellena grading_company y grade.
+Responde ÚNICAMENTE con el JSON."""
 
     try:
         response = model.generate_content([prompt] + parts)
@@ -63,6 +74,7 @@ Responde ÚNICAMENTE con el JSON, sin explicaciones, sin bloques de código."""
             raw = raw.split('```')[1]
             if raw.startswith('json'):
                 raw = raw[4:]
+            raw = raw.strip()
 
         data = json.loads(raw)
         data['gemini_raw'] = response.text

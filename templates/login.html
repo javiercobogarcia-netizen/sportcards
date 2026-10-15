@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#CC0000">
+<title>SportCards — Acceso</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+.login-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: #f5f5f5; }
+.login-logo { font-size: 56px; margin-bottom: 8px; }
+.login-title { font-size: 26px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
+.login-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+.login-box { background: white; border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,.10); }
+.login-tabs { display: flex; gap: 0; margin-bottom: 24px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); }
+.login-tab { flex: 1; padding: 10px; font-size: 14px; font-weight: 600; background: white; border: none; cursor: pointer; color: var(--text-muted); }
+.login-tab.active { background: var(--red); color: white; }
+.login-box .form-group { margin-bottom: 16px; }
+.login-box label { font-size: 13px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px; }
+.login-box input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; outline: none; box-sizing: border-box; }
+.login-box input:focus { border-color: var(--red); }
+.login-box .btn { width: 100%; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-logo">🃏</div>
+  <div class="login-title">SportCards</div>
+  <div class="login-sub">Tu colección de cartas</div>
+
+  <div class="login-box">
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-login" onclick="showTab('login')">Entrar</button>
+      <button class="login-tab" id="tab-register" onclick="showTab('register')">Crear cuenta</button>
+    </div>
+
+    <div id="panel-login">
+      <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" id="l-user" placeholder="Tu nombre de usuario" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="l-pass" placeholder="Tu contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="login-err" style="color:#c62828;font-size:13px;margin-bottom:8px;display:none"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Entrar →</button>
+    </div>
+
+    <div id="panel-register" style="display:none">
+      <div class="form-group">
+        <label>Elige un nombre de usuario</label>
+        <input type="text" id="r-user" placeholder="Ej: javier, hermano..." autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Contraseña (mín. 4 caracteres)</label>
+        <input type="password" id="r-pass" placeholder="Contraseña" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <div id="register-err" style="color:#c62828;font-size:13px;margin-bottom:8px;display:none"></div>
+      <button class="btn btn-primary" onclick="doRegister()">Crear cuenta →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(t) {
+  document.getElementById('tab-login').classList.toggle('active', t==='login');
+  document.getElementById('tab-register').classList.toggle('active', t==='register');
+  document.getElementById('panel-login').style.display = t==='login' ? '' : 'none';
+  document.getElementById('panel-register').style.display = t==='register' ? '' : 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('l-user').value.trim();
+  const password = document.getElementById('l-pass').value;
+  const err = document.getElementById('login-err');
+  err.style.display = 'none';
+  if (!username || !password) { err.textContent = 'Rellena usuario y contraseña'; err.style.display=''; return; }
+  const r = await fetch('/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username, password}) });
+  const data = await r.json();
+  if (r.ok) { window.location.href = '/'; }
+  else { err.textContent = data.error; err.style.display = ''; }
+}
+
+async function doRegister() {
+  const username = document.getElementById('r-user').value.trim();
+  const password = document.getElementById('r-pass').value;
+  const err = document.getElementById('register-err');
+  err.style.display = 'none';
+  if (!username || !password) { err.textContent = 'Rellena todos los campos'; err.style.display=''; return; }
+  const r = await fetch('/register', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username, password}) });
+  const data = await r.json();
+  if (r.ok) { window.location.href = '/'; }
+  else { err.textContent = data.error; err.style.display = ''; }
+}
+</script>
+</body>
+</html>

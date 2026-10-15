@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
 
 DATA_DIR = os.getenv('DATA_DIR', os.path.dirname(__file__))
 DB_PATH = os.path.join(DATA_DIR, 'sportcards.db')
@@ -13,8 +14,16 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
     c.executescript('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
         CREATE TABLE IF NOT EXISTS cards (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER DEFAULT 1,
             player TEXT NOT NULL,
             year INTEGER,
             sport TEXT,
@@ -38,7 +47,8 @@ def init_db():
             qr_code TEXT,
             notes TEXT,
             created_at TEXT DEFAULT (datetime('now')),
-            gemini_raw TEXT
+            gemini_raw TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id)
         );
 
         CREATE TABLE IF NOT EXISTS price_history (
@@ -50,38 +60,99 @@ def init_db():
             FOREIGN KEY (card_id) REFERENCES cards(id)
         );
     ''')
+    # Migrar: añadir user_id si no existe (base de datos antigua)
+    try:
+        c.execute('ALTER TABLE cards ADD COLUMN user_id INTEGER DEFAULT 1')
+        conn.commit()
+    except Exception:
+        pass
     conn.commit()
     conn.close()
 
-def get_stats():
+# --- Usuarios ---
+
+def create_user(username, password):
     conn = get_db()
     c = conn.cursor()
-    c.execute('''
+    try:
+        c.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                  (username.strip().lower(), generate_password_hash(password)))
+        user_id = c.lastrowid
+        conn.commit()
+        conn.close()
+        return user_id, None
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None, 'El usuario ya existe'
+
+def get_user_by_username(username):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = ?', (username.strip().lower(),))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def verify_user(username, password):
+    user = get_user_by_username(username)
+    if not user:
+        return None
+    if check_password_hash(user['password_hash'], password):
+        return user
+    return None
+
+def get_user(user_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT id, username, created_at FROM users WHERE id = ?', (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_all_users():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT id, username, created_at FROM users ORDER BY id')
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+# --- Cartas ---
+
+def get_stats(user_id=None):
+    conn = get_db()
+    c = conn.cursor()
+    where = 'WHERE user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+    c.execute(f'''
         SELECT
             COUNT(*) as total_cards,
             SUM(CASE WHEN status='owned' THEN 1 ELSE 0 END) as owned,
             SUM(CASE WHEN status='sold' THEN 1 ELSE 0 END) as sold,
-            SUM(CASE WHEN status='owned' THEN purchase_price ELSE 0 END) as total_invested,
-            SUM(CASE WHEN status='owned' THEN COALESCE(market_price, purchase_price) ELSE 0 END) as current_value,
-            SUM(CASE WHEN status='sold' THEN (sale_price - purchase_price) ELSE 0 END) as total_profit
-        FROM cards
-    ''')
+            SUM(CASE WHEN status='owned' THEN COALESCE(purchase_price, 0) ELSE 0 END) as total_invested,
+            SUM(CASE WHEN status='owned' THEN COALESCE(market_price, purchase_price, 0) ELSE 0 END) as current_value,
+            SUM(CASE WHEN status='sold' AND purchase_price IS NOT NULL THEN (sale_price - purchase_price) ELSE 0 END) as total_profit
+        FROM cards {where}
+    ''', params)
     row = c.fetchone()
     conn.close()
     return dict(row) if row else {}
 
-def get_all_cards(status=None, search=None, sport=None, year=None, set_name=None):
+def get_all_cards(status=None, search=None, sport=None, year=None, set_name=None, user_id=None):
     conn = get_db()
     c = conn.cursor()
     query = 'SELECT * FROM cards WHERE 1=1'
     params = []
+    if user_id:
+        query += ' AND user_id = ?'
+        params.append(user_id)
     if status:
         query += ' AND status = ?'
         params.append(status)
     if search:
-        query += ' AND (player LIKE ? OR set_name LIKE ? OR team LIKE ?)'
+        query += ' AND (player LIKE ? OR set_name LIKE ? OR team LIKE ? OR variant LIKE ?)'
         like = f'%{search}%'
-        params.extend([like, like, like])
+        params.extend([like, like, like, like])
     if sport:
         query += ' AND sport = ?'
         params.append(sport)
@@ -97,36 +168,42 @@ def get_all_cards(status=None, search=None, sport=None, year=None, set_name=None
     conn.close()
     return [dict(r) for r in rows]
 
-def get_filter_options():
+def get_filter_options(user_id=None):
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT DISTINCT sport FROM cards WHERE sport IS NOT NULL ORDER BY sport')
+    where = 'WHERE user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+    c.execute(f'SELECT DISTINCT sport FROM cards {where} AND sport IS NOT NULL ORDER BY sport'.replace('WHERE AND', 'WHERE'), params)
     sports = [r[0] for r in c.fetchall()]
-    c.execute('SELECT DISTINCT year FROM cards WHERE year IS NOT NULL ORDER BY year DESC')
+    c.execute(f'SELECT DISTINCT year FROM cards {where} AND year IS NOT NULL ORDER BY year DESC'.replace('WHERE AND', 'WHERE'), params)
     years = [r[0] for r in c.fetchall()]
-    c.execute('SELECT DISTINCT set_name FROM cards WHERE set_name IS NOT NULL ORDER BY set_name')
+    c.execute(f'SELECT DISTINCT set_name FROM cards {where} AND set_name IS NOT NULL ORDER BY set_name'.replace('WHERE AND', 'WHERE'), params)
     sets = [r[0] for r in c.fetchall()]
     conn.close()
     return {'sports': sports, 'years': years, 'sets': sets}
 
-def get_card(card_id):
+def get_card(card_id, user_id=None):
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT * FROM cards WHERE id = ?', (card_id,))
+    if user_id:
+        c.execute('SELECT * FROM cards WHERE id = ? AND user_id = ?', (card_id, user_id))
+    else:
+        c.execute('SELECT * FROM cards WHERE id = ?', (card_id,))
     row = c.fetchone()
     conn.close()
     return dict(row) if row else None
 
-def create_card(data):
+def create_card(data, user_id=1):
     conn = get_db()
     c = conn.cursor()
     c.execute('''
         INSERT INTO cards
-        (player, year, sport, team, set_name, variant, card_number, numbering,
+        (user_id, player, year, sport, team, set_name, variant, card_number, numbering,
          graded, grading_company, grade, photo_front, photo_back,
          purchase_price, purchase_date, market_price, market_price_updated, notes, gemini_raw)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ''', (
+        user_id,
         data.get('player'), data.get('year'), data.get('sport'), data.get('team'),
         data.get('set_name'), data.get('variant'), data.get('card_number'),
         data.get('numbering'), data.get('graded', 0), data.get('grading_company'),
@@ -173,6 +250,38 @@ def get_price_history(card_id):
     c = conn.cursor()
     c.execute('SELECT * FROM price_history WHERE card_id = ? ORDER BY recorded_at DESC LIMIT 20',
               (card_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_stats_by_sport(user_id=None):
+    conn = get_db()
+    c = conn.cursor()
+    where = 'AND user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+    c.execute(f'''
+        SELECT sport,
+            COUNT(*) as total,
+            SUM(CASE WHEN status='owned' THEN 1 ELSE 0 END) as owned,
+            SUM(CASE WHEN status='sold' THEN 1 ELSE 0 END) as sold,
+            SUM(COALESCE(purchase_price, 0)) as invested
+        FROM cards WHERE sport IS NOT NULL {where}
+        GROUP BY sport ORDER BY total DESC
+    ''', params)
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_top_cards(user_id=None, limit=5):
+    conn = get_db()
+    c = conn.cursor()
+    where = 'AND user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+    c.execute(f'''
+        SELECT *, (COALESCE(market_price, purchase_price, 0) - COALESCE(purchase_price, 0)) as gain
+        FROM cards WHERE status='owned' AND purchase_price IS NOT NULL {where}
+        ORDER BY gain DESC LIMIT ?
+    ''', (*params, limit))
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]

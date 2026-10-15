@@ -13,7 +13,7 @@
 <body>
 
 <div class="nav">
-  <span class="nav-icon">🃏</span>
+  <a href="/logout" style="color:white;font-size:13px;text-decoration:none;opacity:.8">{{ username }} ↩</a>
   <h1>SportCards</h1>
   <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar Excel">📊</a>
 </div>
@@ -37,6 +37,7 @@
   <a href="/" class="active"><span>🏠</span><span>Inicio</span></a>
   <a href="/collection"><span>📚</span><span>Colección</span></a>
   <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
+  <a href="/stats"><span>📈</span><span>Stats</span></a>
 </nav>
 
 <script>
@@ -92,6 +93,10 @@ function fmt(v) {
 
 loadStats();
 loadRecent();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
