@@ -9,7 +9,7 @@ def identify_card(front_path, back_path=None):
         return None, 'API key de Gemini no configurada'
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-3.8-flash')
 
     parts = []
 
