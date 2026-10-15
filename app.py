@@ -221,13 +221,7 @@ def api_identify():
     back_file = request.files.get('back')
 
     if not front_file:
-        debug_info = {
-            'files_keys': list(request.files.keys()),
-            'form_keys': list(request.form.keys()),
-            'content_type': request.content_type,
-            'content_length': request.content_length,
-        }
-        return jsonify({'error': f'Foto delantera requerida — debug: {debug_info}'}), 400
+        return jsonify({'error': 'Foto delantera requerida'}), 400
 
     try:
         front_path, front_rel = save_photo(front_file, 'fronts')
