@@ -211,8 +211,8 @@ async function identify() {
   document.getElementById('step-loading').style.display = 'block';
 
   const fd = new FormData();
-  fd.append('front', photoData.front);
-  if (photoData.back) fd.append('back', photoData.back);
+  fd.append('front', photoData.front, photoData.front.name || 'photo.jpg');
+  if (photoData.back) fd.append('back', photoData.back, photoData.back.name || 'photo.jpg');
 
   try {
     const r = await fetch('/api/identify', { method: 'POST', body: fd });
