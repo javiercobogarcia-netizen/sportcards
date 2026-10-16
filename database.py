@@ -60,7 +60,6 @@ def init_db():
             FOREIGN KEY (card_id) REFERENCES cards(id)
         );
     ''')
-    # Migrar: añadir user_id si no existe (base de datos antigua)
     try:
         c.execute('ALTER TABLE cards ADD COLUMN user_id INTEGER DEFAULT 1')
         conn.commit()
@@ -68,8 +67,6 @@ def init_db():
         pass
     conn.commit()
     conn.close()
-
-# --- Usuarios ---
 
 def create_user(username, password):
     conn = get_db()
@@ -116,8 +113,6 @@ def get_all_users():
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
-
-# --- Cartas ---
 
 def get_stats(user_id=None):
     conn = get_db()
@@ -287,6 +282,27 @@ def get_top_cards(user_id=None, limit=5):
         SELECT *, (COALESCE(market_price, purchase_price, 0) - COALESCE(purchase_price, 0)) as gain
         FROM cards WHERE status='owned' AND purchase_price IS NOT NULL {where}
         ORDER BY gain DESC LIMIT ?
+    ''', (*params, limit))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_stats_by_player(user_id=None, limit=20):
+    conn = get_db()
+    c = conn.cursor()
+    where = 'WHERE user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+    c.execute(f'''
+        SELECT player,
+               COUNT(*) as total,
+               SUM(CASE WHEN status='owned' THEN 1 ELSE 0 END) as owned,
+               SUM(CASE WHEN status='sold' THEN 1 ELSE 0 END) as sold,
+               SUM(COALESCE(purchase_price, 0)) as total_invested,
+               SUM(CASE WHEN status='sold' THEN COALESCE(sale_price,0) - COALESCE(purchase_price,0) ELSE 0 END) as profit
+        FROM cards {where}
+        GROUP BY player
+        ORDER BY total DESC
+        LIMIT ?
     ''', (*params, limit))
     rows = c.fetchall()
     conn.close()
