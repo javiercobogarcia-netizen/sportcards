@@ -12,7 +12,7 @@ load_dotenv()
 from database import (init_db as _init_db, get_stats, get_all_cards, get_card, create_card, update_card,
                       add_price_history, get_price_history, get_filter_options,
                       create_user, verify_user, get_user, get_all_users,
-                      get_stats_by_sport, get_top_cards)
+                      get_stats_by_sport, get_top_cards, get_stats_by_player)
 from gemini_service import identify_card
 from ebay_service import search_card_price
 from qr_service import generate_qr
@@ -22,7 +22,6 @@ app = Flask(__name__)
 CORS(app)
 app.secret_key = os.getenv('SECRET_KEY', 'sportcards-2024')
 
-# Inicializar BD siempre (también con gunicorn en producción)
 _init_db()
 
 DATA_DIR = os.getenv('DATA_DIR', os.path.dirname(__file__))
@@ -62,8 +61,6 @@ def save_photo(file, subfolder):
     img.thumbnail((1200, 1200), Image.LANCZOS)
     img.save(path, 'JPEG', quality=75, optimize=True, exif=b'')
     return path, f'uploads/{subfolder}/{filename}'
-
-# --- Páginas ---
 
 @app.route('/login', methods=['GET'])
 def login_page():
@@ -144,8 +141,6 @@ def user_collection(username):
                            target_username=target['username'],
                            viewer_username=session.get('username'))
 
-# --- API ---
-
 @app.route('/api/users')
 @login_required
 def api_users():
@@ -190,6 +185,7 @@ def api_stats_detail():
     return jsonify({
         'by_sport': get_stats_by_sport(user_id=uid),
         'top_cards': get_top_cards(user_id=uid),
+        'by_player': get_stats_by_player(user_id=uid),
         'general': get_stats(user_id=uid)
     })
 
@@ -246,7 +242,6 @@ def api_identify():
     data['photo_front'] = front_rel
     data['photo_back'] = back_rel
 
-    # Precio de eBay automático (si está configurado)
     if data.get('player') and data.get('sport') != 'pokemon':
         result, _ = search_card_price(
             data.get('player'), data.get('year'), data.get('set_name'),
@@ -411,7 +406,6 @@ def fix_rotations():
     return jsonify({'fixed': fixed, 'errors': errors})
 
 def search_pokemon_price(name, set_name, card_number):
-    """Busca precio en eBay para cartas Pokémon."""
     return search_card_price(name, None, set_name, None, None, None)
 
 if __name__ == '__main__':
