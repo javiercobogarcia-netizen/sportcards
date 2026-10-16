@@ -121,6 +121,22 @@ async function load() {
         </a>`;
       }).join('')}
     </div>` : ''}
+
+    ${d.by_player && d.by_player.length ? `
+    <div class="form-section">
+      <h2>Por jugador</h2>
+      ${d.by_player.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600">${p.player}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${p.total} carta${p.total!==1?'s':''} · ${p.owned} en posesión${p.sold ? ' · '+p.sold+' vendida'+(p.sold!==1?'s':'') : ''}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;color:var(--red);font-weight:600">${fmt(p.total_invested)}</div>
+            ${p.profit ? `<div style="font-size:11px" class="${p.profit>=0?'gain-positive':'gain-negative'}">${p.profit>=0?'+':''}${fmt(p.profit)}</div>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>` : ''}
   `;
 }
 
