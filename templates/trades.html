@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111111">
+<title>Trades — SportCards</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<div class="nav">
+  <a href="/" class="nav-back">‹</a>
+  <h1>Trades</h1>
+  <button onclick="showNewTrade()" style="background:none;border:none;color:white;font-size:22px;cursor:pointer" title="Nuevo trade">➕</button>
+</div>
+
+<!-- MODAL NUEVO TRADE -->
+<div id="trade-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;overflow-y:auto;padding:16px">
+  <div style="background:white;border-radius:16px;padding:20px;max-width:600px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:18px;color:var(--red)">🔄 Nuevo trade</h2>
+      <button onclick="hideNewTrade()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666">×</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group"><label>Fecha del trade</label><input type="date" id="t-date"></div>
+      <div class="form-group"><label>Con quién (opcional)</label><input type="text" id="t-counterpart" placeholder="Nombre o usuario"></div>
+    </div>
+    <div class="form-group"><label>Notas</label><textarea id="t-notes" rows="2" placeholder="Detalles del trade..."></textarea></div>
+
+    <!-- CARTAS QUE ENTREGO -->
+    <div style="background:#fff5f5;border-radius:10px;padding:14px;margin-bottom:14px">
+      <h3 style="font-size:15px;color:#c0392b;margin-bottom:10px">📤 Cartas que entrego</h3>
+      <div id="give-cards"></div>
+      <button type="button" onclick="addGiveCard()" class="btn btn-secondary" style="margin-top:8px;font-size:13px">+ Añadir carta de mi colección</button>
+      <div style="margin-top:10px;font-size:14px;font-weight:600;color:#c0392b">
+        Total entregado: <span id="give-total">0.00 €</span>
+        <span style="font-size:12px;color:#999;font-weight:400"> (precio de compra automático)</span>
+      </div>
+    </div>
+
+    <!-- CARTAS QUE RECIBO -->
+    <div style="background:#f0fff4;border-radius:10px;padding:14px;margin-bottom:14px">
+      <h3 style="font-size:15px;color:#27ae60;margin-bottom:10px">📥 Cartas que recibo</h3>
+      <div id="receive-cards"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button type="button" onclick="addReceiveExisting()" class="btn btn-secondary" style="font-size:13px">+ De mi colección</button>
+        <button type="button" onclick="addReceiveNew()" class="btn btn-secondary" style="font-size:13px">+ Nueva carta</button>
+      </div>
+      <div style="margin-top:10px;font-size:14px;font-weight:600;color:#27ae60">
+        Total recibido: <span id="receive-total">0.00 €</span>
+      </div>
+    </div>
+
+    <div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:14px;text-align:center">
+      <div style="font-size:14px;color:#666">Beneficio del trade</div>
+      <div id="trade-profit" style="font-size:24px;font-weight:700">0.00 €</div>
+    </div>
+
+    <div id="trade-alert"></div>
+    <button class="btn btn-primary" onclick="saveTrade()">💾 Guardar trade</button>
+  </div>
+</div>
+
+<div class="container">
+  <div id="trades-list">
+    <div class="loading"><div class="spinner"></div><p>Cargando trades...</p></div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/"><span>🏠</span><span>Inicio</span></a>
+  <a href="/collection"><span>📚</span><span>Colección</span></a>
+  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
+  <a href="/trades" class="active"><span>🔄</span><span>Trades</span></a>
+  <a href="/stats"><span>📈</span><span>Stats</span></a>
+</nav>
+
+<script>
+let ownedCards = [];
+let giveCards = [];
+let receiveCards = [];
+
+async function init() {
+  const r = await fetch('/api/cards?status=owned');
+  ownedCards = await r.json();
+  loadTrades();
+}
+
+async function loadTrades() {
+  const r = await fetch('/api/trades');
+  const trades = await r.json();
+  const container = document.getElementById('trades-list');
+  if (!trades.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><p>Aún no tienes trades.<br>Pulsa ➕ para registrar uno.</p></div>';
+    return;
+  }
+  container.innerHTML = trades.map(t => {
+    const profit = (t.receive_value || 0) - (t.give_value || 0);
+    const cls = profit >= 0 ? 'roi-positive' : 'roi-negative';
+    const giveList = t.cards.filter(c => c.direction === 'give');
+    const receiveList = t.cards.filter(c => c.direction === 'receive');
+    return `<div style="background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;color:#999">${t.trade_date || 'Sin fecha'}${t.counterpart ? ' · con ' + t.counterpart : ''}</div>
+        <div class="${cls}" style="font-size:16px;font-weight:700">${profit >= 0 ? '+' : ''}${profit.toFixed(2)} €</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#c0392b;margin-bottom:4px">📤 Entrego</div>
+          ${giveList.map(c => `<div style="font-size:13px">${c.player || c.description || '—'} <span style="color:#999">${c.value ? c.value.toFixed(2)+'€' : ''}</span></div>`).join('')}
+          <div style="font-size:12px;color:#c0392b;margin-top:4px">Total: ${(t.give_value||0).toFixed(2)} €</div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#27ae60;margin-bottom:4px">📥 Recibo</div>
+          ${receiveList.map(c => `<div style="font-size:13px">${c.player || c.description || '—'} <span style="color:#999">${c.value ? c.value.toFixed(2)+'€' : ''}</span></div>`).join('')}
+          <div style="font-size:12px;color:#27ae60;margin-top:4px">Total: ${(t.receive_value||0).toFixed(2)} €</div>
+        </div>
+      </div>
+      ${t.notes ? `<div style="font-size:12px;color:#999;margin-top:8px;border-top:1px solid #eee;padding-top:8px">${t.notes}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function showNewTrade() {
+  giveCards = [];
+  receiveCards = [];
+  document.getElementById('give-cards').innerHTML = '';
+  document.getElementById('receive-cards').innerHTML = '';
+  document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('t-counterpart').value = '';
+  document.getElementById('t-notes').value = '';
+  document.getElementById('trade-alert').innerHTML = '';
+  updateTotals();
+  document.getElementById('trade-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function hideNewTrade() {
+  document.getElementById('trade-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function addGiveCard() {
+  if (!ownedCards.length) { alert('No tienes cartas en tu colección'); return; }
+  const idx = giveCards.length;
+  const options = ownedCards
+    .filter(c => !giveCards.find(g => g && g.card_id === c.id))
+    .map(c => `<option value="${c.id}" data-price="${c.purchase_price || 0}">${c.player}${c.set_name ? ' – '+c.set_name : ''}${c.purchase_price ? ' (${c.purchase_price.toFixed(2)}€)' : ''}</option>`)
+    .join('');
+  const div = document.createElement('div');
+  div.id = `give-${idx}`;
+  div.style = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
+  div.innerHTML = `
+    <select onchange="selectGiveCard(${idx},this)" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+      <option value="">— Selecciona carta —</option>${options}
+    </select>
+    <input type="number" id="give-price-${idx}" placeholder="€" step="0.01" min="0" style="width:80px;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="updateGivePrice(${idx},this.value)">
+    <button type="button" onclick="removeGive(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer;color:#c0392b">×</button>`;
+  document.getElementById('give-cards').appendChild(div);
+  giveCards.push({ card_id: null, value: 0, player: '' });
+}
+
+function selectGiveCard(idx, sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const price = parseFloat(opt.dataset.price) || 0;
+  const card = ownedCards.find(c => c.id === parseInt(sel.value));
+  giveCards[idx] = { card_id: parseInt(sel.value) || null, value: price, player: card ? card.player : '' };
+  document.getElementById(`give-price-${idx}`).value = price.toFixed(2);
+  updateTotals();
+}
+
+function updateGivePrice(idx, val) {
+  if (giveCards[idx]) giveCards[idx].value = parseFloat(val) || 0;
+  updateTotals();
+}
+
+function removeGive(idx) {
+  giveCards[idx] = null;
+  const el = document.getElementById(`give-${idx}`);
+  if (el) el.remove();
+  updateTotals();
+}
+
+function addReceiveExisting() {
+  if (!ownedCards.length) { alert('No tienes cartas en tu colección'); return; }
+  const idx = receiveCards.length;
+  const options = ownedCards.map(c => `<option value="${c.id}" data-price="${c.market_price || c.purchase_price || 0}">${c.player}${c.set_name ? ' – '+c.set_name : ''}</option>`).join('');
+  const div = document.createElement('div');
+  div.id = `receive-${idx}`;
+  div.style = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
+  div.innerHTML = `
+    <select onchange="selectReceiveCard(${idx},this)" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+      <option value="">— Selecciona carta —</option>${options}
+    </select>
+    <input type="number" id="receive-value-${idx}" placeholder="Valor €" step="0.01" min="0" style="width:90px;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="updateReceiveValue(${idx},this.value)">
+    <button type="button" onclick="searchEbay(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer" title="Buscar en eBay">🔍</button>
+    <button type="button" onclick="removeReceive(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer;color:#c0392b">×</button>`;
+  document.getElementById('receive-cards').appendChild(div);
+  receiveCards.push({ card_id: null, value: 0, player: '', is_new: false });
+}
+
+function addReceiveNew() {
+  const idx = receiveCards.length;
+  const div = document.createElement('div');
+  div.id = `receive-${idx}`;
+  div.style = 'background:#f8fff8;border-radius:8px;padding:10px;margin-bottom:8px';
+  div.innerHTML = `
+    <div style="display:flex;gap:6px;margin-bottom:6px">
+      <input type="text" id="receive-player-${idx}" placeholder="Jugador *" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="updateReceiveNew(${idx})">
+      <button type="button" onclick="removeReceive(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer;color:#c0392b">×</button>
+    </div>
+    <div style="display:flex;gap:6px">
+      <input type="text" id="receive-set-${idx}" placeholder="Set / Colección" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+      <input type="number" id="receive-value-${idx}" placeholder="Valor €" step="0.01" min="0" style="width:100px;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="updateReceiveValue(${idx},this.value)">
+      <button type="button" onclick="searchEbayNew(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer" title="Buscar en eBay">🔍</button>
+    </div>
+    <div id="ebay-result-${idx}" style="font-size:12px;color:#27ae60;margin-top:4px"></div>`;
+  document.getElementById('receive-cards').appendChild(div);
+  receiveCards.push({ card_id: null, value: 0, player: '', is_new: true });
+}
+
+function selectReceiveCard(idx, sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const price = parseFloat(opt.dataset.price) || 0;
+  const card = ownedCards.find(c => c.id === parseInt(sel.value));
+  receiveCards[idx] = { card_id: parseInt(sel.value) || null, value: price, player: card ? card.player : '', is_new: false };
+  document.getElementById(`receive-value-${idx}`).value = price.toFixed(2);
+  updateTotals();
+}
+
+function updateReceiveNew(idx) {
+  if (receiveCards[idx]) receiveCards[idx].player = document.getElementById(`receive-player-${idx}`).value;
+}
+
+function updateReceiveValue(idx, val) {
+  if (receiveCards[idx]) receiveCards[idx].value = parseFloat(val) || 0;
+  updateTotals();
+}
+
+function removeReceive(idx) {
+  receiveCards[idx] = null;
+  const el = document.getElementById(`receive-${idx}`);
+  if (el) el.remove();
+  updateTotals();
+}
+
+async function searchEbay(idx) {
+  const card = ownedCards.find(c => c.id === receiveCards[idx]?.card_id);
+  if (!card) { alert('Selecciona una carta primero'); return; }
+  await doEbaySearch(idx, card.player, card.year, card.set_name, card.numbering);
+}
+
+async function searchEbayNew(idx) {
+  const player = document.getElementById(`receive-player-${idx}`)?.value?.trim();
+  const set = document.getElementById(`receive-set-${idx}`)?.value?.trim();
+  if (!player) { alert('Introduce el jugador primero'); return; }
+  await doEbaySearch(idx, player, null, set, null, true);
+}
+
+async function doEbaySearch(idx, player, year, set_name, numbering, isNew=false) {
+  const btn = document.querySelector(`#receive-${idx} button[title="Buscar en eBay"]`);
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  try {
+    const r = await fetch('/api/ebay-search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ player, year, set_name, numbering })
+    });
+    const data = await r.json();
+    if (r.ok && data.average) {
+      receiveCards[idx].value = data.average;
+      document.getElementById(`receive-value-${idx}`).value = data.average.toFixed(2);
+      if (isNew) {
+        const el = document.getElementById(`ebay-result-${idx}`);
+        if (el) el.textContent = `✅ eBay: ${data.average.toFixed(2)} € (${data.samples} ventas)`;
+      }
+      updateTotals();
+    } else {
+      alert('No se encontraron resultados en eBay. Introduce el valor manualmente.');
+    }
+  } catch(e) {
+    alert('Error buscando en eBay');
+  }
+  if (btn) { btn.textContent = '🔍'; btn.disabled = false; }
+}
+
+function updateTotals() {
+  const giveTotal = giveCards.filter(Boolean).reduce((s, c) => s + (c.value || 0), 0);
+  const receiveTotal = receiveCards.filter(Boolean).reduce((s, c) => s + (c.value || 0), 0);
+  const profit = receiveTotal - giveTotal;
+  document.getElementById('give-total').textContent = giveTotal.toFixed(2) + ' €';
+  document.getElementById('receive-total').textContent = receiveTotal.toFixed(2) + ' €';
+  const el = document.getElementById('trade-profit');
+  el.textContent = (profit >= 0 ? '+' : '') + profit.toFixed(2) + ' €';
+  el.style.color = profit >= 0 ? '#27ae60' : '#c0392b';
+}
+
+async function saveTrade() {
+  const give = giveCards.filter(Boolean).filter(c => c.card_id);
+  const receive = receiveCards.filter(Boolean);
+  if (!give.length && !receive.length) {
+    document.getElementById('trade-alert').innerHTML = '<div class="alert alert-error">Añade al menos una carta al trade</div>';
+    return;
+  }
+
+  const receivePayload = receive.map(c => {
+    if (c.is_new) {
+      const realIdx = receiveCards.indexOf(c);
+      const playerEl = document.getElementById(`receive-player-${realIdx}`);
+      const setEl = document.getElementById(`receive-set-${realIdx}`);
+      return {
+        player: playerEl ? playerEl.value : c.player,
+        description: setEl ? setEl.value : '',
+        value: c.value,
+        card_id: null
+      };
+    }
+    return c;
+  });
+
+  const payload = {
+    trade_date: document.getElementById('t-date').value,
+    counterpart: document.getElementById('t-counterpart').value.trim() || null,
+    notes: document.getElementById('t-notes').value.trim() || null,
+    give,
+    receive: receivePayload,
+  };
+
+  const r = await fetch('/api/trades', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) {
+    document.getElementById('trade-alert').innerHTML = '<div class="alert alert-error">Error al guardar el trade</div>';
+    return;
+  }
+  hideNewTrade();
+  loadTrades();
+  const r2 = await fetch('/api/cards?status=owned');
+  ownedCards = await r2.json();
+}
+
+init();
+</script>
+</body>
+</html>
