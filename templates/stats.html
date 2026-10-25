@@ -10,7 +10,7 @@
 <style>
 .stat-big { background: white; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: var(--shadow); }
 .stat-big-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
-.stat-big-value { font-size: 28px; font-weight: 700; color: var(--text); }
+.stat-big-value { font-size: 28px; font-weight: 700; color: #222; }
 .stat-big-value.red { color: var(--red); }
 .stat-big-value.green { color: #2e7d32; }
 .sport-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
@@ -26,198 +26,13 @@
 </head>
 <body>
 
+
 <div class="nav">
   <a href="/" class="nav-back">&#x2039;</a>
   <h1>Estadísticas</h1>
   <span style="color:white;font-size:13px;opacity:.8">{{ username }}</span>
 </div>
 
+
 <div class="container" id="content">
   <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
-</div>
-
-<nav class="bottom-nav">
-  <a href="/"><span>&#x1F3E0;</span><span>Inicio</span></a>
-  <a href="/collection"><span>&#x1F4DA;</span><span>Colección</span></a>
-  <a href="/add" class="add-btn"><span>&#x2795;</span><span>Añadir</span></a>
-  <a href="/trades"><span>&#x1F504;</span><span>Trades</span></a>
-  <a href="/stats" class="active"><span>&#x1F4C8;</span><span>Stats</span></a>
-</nav>
-
-<script>
-function fmt(v) {
-  if (v === null || v === undefined) return '—';
-  return parseFloat(v).toFixed(2) + ' €';
-}
-
-async function load() {
-  const [r1, r2, r3] = await Promise.all([
-    fetch('/api/stats/detail'),
-    fetch('/api/profit/periods'),
-    fetch('/api/cards?status=owned'),
-  ]);
-  const d = await r1.json();
-  const periods = await r2.json();
-  const allOwned = await r3.json();
-  const g = d.general;
-  const sports = d.by_sport;
-  const top = d.top_cards;
-
-  const personal = allOwned.filter(c => c.personal_collection);
-  const trading = allOwned.filter(c => !c.personal_collection);
-  const sumInv = arr => arr.reduce((a, c) => a + (c.purchase_price || 0), 0);
-  const sumVal = arr => arr.reduce((a, c) => a + (c.market_price || c.purchase_price || 0), 0);
-  const pInv = sumInv(personal), pVal = sumVal(personal);
-  const tInv = sumInv(trading), tVal = sumVal(trading);
-  const pLatent = pVal - pInv, tLatent = tVal - tInv;
-
-  const profit = g.total_profit || 0;
-  const maxSport = sports.length ? Math.max(...sports.map(s => s.total)) : 1;
-
-  document.getElementById('content').innerHTML = `
-    <div class="form-section" style="margin-bottom:12px">
-      <h2>🔄 Trading</h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div class="stat-big" style="margin-bottom:0">
-          <div class="stat-big-label">Cartas</div>
-          <div class="stat-big-value red">${trading.length}</div>
-        </div>
-        <div class="stat-big" style="margin-bottom:0">
-          <div class="stat-big-label">Invertido</div>
-          <div class="stat-big-value" style="font-size:18px">${fmt(tInv)}</div>
-        </div>
-        <div class="stat-big" style="margin-bottom:0">
-          <div class="stat-big-label">Valor actual</div>
-          <div class="stat-big-value" style="font-size:18px">${fmt(tVal)}</div>
-        </div>
-        <div class="stat-big" style="margin-bottom:0">
-          <div class="stat-big-label">Plus/menos latente</div>
-          <div class="stat-big-value ${tLatent >= 0 ? 'green' : 'red'}" style="font-size:18px">${tLatent >= 0 ? '+' : ''}${fmt(tLatent)}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-section" style="margin-bottom:12px">
-      <h2>🏡 Colección personal</h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div class="stat-big" style="margin-bottom:0">
-          <div class="stat-big-label">Cartas</div>
-          <div class="stat-big-value red">${personal.length}</div>
-        </div>
-        <div class="stat-big" style="margin-bottom:0">
-          <div class="stat-big-label">Invertido</div>
-          <div class="stat-big-value" style="font-size:18px">${fmt(pInv)}</div>
-        </div>
-        <div class="stat-big" style="margin-bottom:0">
-          <div class="stat-big-label">Valor actual</div>
-          <div class="stat-big-value" style="font-size:18px">${fmt(pVal)}</div>
-        </div>
-        <div class="stat-big" style="margin-bottom:0">
-          <div class="stat-big-label">Plus/menos latente</div>
-          <div class="stat-big-value ${pLatent >= 0 ? 'green' : 'red'}" style="font-size:18px">${pLatent >= 0 ? '+' : ''}${fmt(pLatent)}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="stat-big" style="margin-bottom:4px">
-      <div class="stat-big-label" style="margin-bottom:2px">Beneficio realizado (vendidas)</div>
-      <div class="stat-big-value ${profit >= 0 ? 'green' : 'red'}" style="font-size:22px">${profit >= 0 ? '+' : ''}${fmt(profit)}</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${g.sold || 0} cartas vendidas · ${g.total_cards || 0} en total</div>
-    </div>
-
-    ${sports.length ? `
-    <div class="form-section" style="margin-bottom:12px">
-      <h2>Por deporte</h2>
-      ${sports.map(s => `
-        <div class="sport-row">
-          <div style="flex:1">
-            <div style="font-weight:600;text-transform:capitalize">${s.sport}</div>
-            <div class="sport-bar" style="width:${Math.round((s.total/maxSport)*100)}%"></div>
-          </div>
-          <div style="text-align:right;margin-left:12px">
-            <div style="font-weight:700;color:var(--red)">${s.total}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${fmt(s.invested)}</div>
-          </div>
-        </div>`).join('')}
-    </div>` : ''}
-
-    ${top.length ? `
-    <div class="form-section">
-      <h2>Mejores inversiones actuales</h2>
-      ${top.map((c, i) => {
-        const gain = (c.market_price || c.purchase_price || 0) - (c.purchase_price || 0);
-        const roi = c.purchase_price ? ((gain / c.purchase_price) * 100).toFixed(1) : null;
-        return `<a href="/card/${c.id}" class="top-card" style="text-decoration:none;color:inherit">
-          ${c.photo_front ? `<img src="/${c.photo_front}" loading="lazy">` : `<div class="top-card-placeholder">🃏</div>`}
-          <div style="flex:1">
-            <div style="font-weight:600">${c.player}</div>
-            <div style="font-size:12px;color:var(--text-muted)">${[c.year, c.set_name].filter(Boolean).join(' · ')}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="${gain >= 0 ? 'gain-positive' : 'gain-negative'}">${gain >= 0 ? '+' : ''}${fmt(gain)}</div>
-            ${roi ? `<div style="font-size:11px;color:var(--text-muted)">${roi}%</div>` : ''}
-          </div>
-        </a>`;
-      }).join('')}
-    </div>` : ''}
-
-    <div class="form-section" style="margin-bottom:12px">
-      <h2>📅 Beneficio por período</h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        ${[
-          {label:'Hoy', key:'today'},
-          {label:'Esta semana', key:'week'},
-          {label:'Este mes', key:'month'},
-          {label:'Este trimestre', key:'quarter'},
-          {label:'Este año', key:'year'},
-          {label:'Total histórico', key:'all'},
-        ].map(({label, key}) => {
-          const p = periods[key] || {};
-          const profit = p.profit || 0;
-          const cls = profit >= 0 ? 'green' : 'red';
-          return `<div class="stat-big" style="margin-bottom:0">
-            <div class="stat-big-label">${label}</div>
-            <div class="stat-big-value ${cls}" style="font-size:20px">${profit >= 0 ? '+' : ''}${fmt(profit)}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${p.sold_count || 0} venta${p.sold_count !== 1 ? 's' : ''}</div>
-          </div>`;
-        }).join('')}
-      </div>
-      ${periods.by_month && periods.by_month.length ? `
-      <div>
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">Últimos 12 meses</div>
-        ${periods.by_month.map(m => {
-          const profit = m.profit || 0;
-          const cls = profit >= 0 ? 'gain-positive' : 'gain-negative';
-          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-            <div style="font-size:13px">${m.month}</div>
-            <div style="text-align:right">
-              <span class="${cls}" style="font-size:14px;font-weight:600">${profit >= 0 ? '+' : ''}${fmt(profit)}</span>
-              <span style="font-size:11px;color:var(--text-muted);margin-left:6px">${m.sold_count} venta${m.sold_count !== 1 ? 's' : ''}</span>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>` : '<div style="font-size:13px;color:var(--text-muted)">Sin ventas en los últimos 12 meses</div>'}
-    </div>
-
-    ${d.by_player && d.by_player.length ? `
-    <div class="form-section">
-      <h2>Por jugador</h2>
-      ${d.by_player.map(p => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-weight:600">${p.player}</div>
-            <div style="font-size:12px;color:var(--text-muted)">${p.total} carta${p.total!==1?'s':''} · ${p.owned} en posesión${p.sold ? ' · '+p.sold+' vendida'+(p.sold!==1?'s':'') : ''}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:13px;color:var(--red);font-weight:600">${fmt(p.total_invested)}</div>
-            ${p.profit ? `<div style="font-size:11px" class="${p.profit>=0?'gain-positive':'gain-negative'}">${p.profit>=0?'+':''}${fmt(p.profit)}</div>` : ''}
-          </div>
-        </div>`).join('')}
-    </div>` : ''}
-  `;
-}
-
-load();
-</script>
-</body>
-</html>
