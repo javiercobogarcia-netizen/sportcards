@@ -20,11 +20,23 @@
 
 <div class="container">
 
-  <div class="stats-grid" id="stats">
-    <div class="stat-card"><div class="stat-value" id="s-owned">—</div><div class="stat-label">Cartas en posesión</div></div>
-    <div class="stat-card highlight"><div class="stat-value" id="s-invested">—</div><div class="stat-label">Total invertido</div></div>
-    <div class="stat-card"><div class="stat-value" id="s-value">—</div><div class="stat-label">Valor actual</div></div>
-    <div class="stat-card"><div class="stat-value" id="s-profit">—</div><div class="stat-label">Beneficio realizado</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <a href="/collection" style="text-decoration:none;background:white;border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text)">
+      <span style="font-size:28px">📚</span>
+      <span style="font-size:13px;font-weight:600">Colección</span>
+    </a>
+    <a href="/add" style="text-decoration:none;background:var(--red);border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;color:white">
+      <span style="font-size:28px">➕</span>
+      <span style="font-size:13px;font-weight:600">Añadir carta</span>
+    </a>
+    <a href="/trades" style="text-decoration:none;background:white;border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text)">
+      <span style="font-size:28px">🔄</span>
+      <span style="font-size:13px;font-weight:600">Trades</span>
+    </a>
+    <a href="/stats" style="text-decoration:none;background:white;border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text)">
+      <span style="font-size:28px">📈</span>
+      <span style="font-size:13px;font-weight:600">Estadísticas</span>
+    </a>
   </div>
 
   <div id="alerts-section" style="margin-bottom:16px"></div>
@@ -49,18 +61,6 @@
 </nav>
 
 <script>
-async function loadStats() {
-  const r = await fetch('/api/stats');
-  const s = await r.json();
-  document.getElementById('s-owned').textContent = s.owned || 0;
-  document.getElementById('s-invested').textContent = fmt(s.total_invested);
-  document.getElementById('s-value').textContent = fmt(s.current_value);
-  const profit = s.total_profit || 0;
-  const el = document.getElementById('s-profit');
-  el.textContent = fmt(profit);
-  el.className = 'stat-value ' + (profit >= 0 ? 'profit-positive' : 'profit-negative');
-}
-
 async function loadRecent() {
   const r = await fetch('/api/cards?status=owned');
   const cards = await r.json();
@@ -94,11 +94,6 @@ function cardHTML(c) {
   </a>`;
 }
 
-function fmt(v) {
-  if (!v) return '0 €';
-  return parseFloat(v).toFixed(2) + ' €';
-}
-
 async function loadOtherUsers() {
   const r = await fetch('/api/users');
   const users = await r.json();
@@ -113,28 +108,25 @@ async function loadOtherUsers() {
 }
 
 async function loadAlerts() {
-  try {
-    const r = await fetch('/api/alerts');
-    const data = await r.json();
-    const sec = document.getElementById('alerts-section');
-    const alerts = [];
-    if (data.old_cards_count > 0) {
-      const names = data.old_cards.slice(0, 3).map(c => c.player).join(', ');
-      const extra = data.old_cards_count > 3 ? ` y ${data.old_cards_count - 3} más` : '';
-      alerts.push(`<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
-        <span style="font-size:20px">⚠️</span>
-        <div>
-          <strong>Tienes ${data.old_cards_count} carta${data.old_cards_count>1?'s':''} con más de 6 meses en tu colección</strong>
-          <div style="font-size:13px;color:#666;margin-top:4px">${names}${extra}</div>
-          <a href="/collection" style="font-size:13px;color:#856404;font-weight:600">Ver colección →</a>
-        </div>
-      </div>`);
-    }
-    sec.innerHTML = alerts.join('');
-  } catch(e) {}
+  const r = await fetch('/api/alerts');
+  const data = await r.json();
+  const sec = document.getElementById('alerts-section');
+  const alerts = [];
+  if (data.old_cards_count > 0) {
+    const names = data.old_cards.slice(0, 3).map(c => c.player).join(', ');
+    const extra = data.old_cards_count > 3 ? ` y ${data.old_cards_count - 3} más` : '';
+    alerts.push(`<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+      <span style="font-size:20px">⚠️</span>
+      <div>
+        <strong>Tienes ${data.old_cards_count} carta${data.old_cards_count>1?'s':''} con más de 6 meses en tu colección</strong>
+        <div style="font-size:13px;color:#666;margin-top:4px">${names}${extra}</div>
+        <a href="/collection" style="font-size:13px;color:#856404;font-weight:600">Ver colección →</a>
+      </div>
+    </div>`);
+  }
+  sec.innerHTML = alerts.join('');
 }
 
-loadStats();
 loadRecent();
 loadOtherUsers();
 loadAlerts();
