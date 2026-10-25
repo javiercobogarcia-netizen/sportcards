@@ -27,6 +27,8 @@
     <div class="stat-card"><div class="stat-value" id="s-profit">—</div><div class="stat-label">Beneficio realizado</div></div>
   </div>
 
+  <div id="alerts-section" style="margin-bottom:16px"></div>
+
   <h2 style="margin-bottom:12px;font-size:16px;color:#666">Últimas añadidas</h2>
   <div id="recent-cards"></div>
   <a href="/collection" class="btn btn-secondary" style="margin-top:8px">Ver colección completa →</a>
@@ -42,6 +44,7 @@
   <a href="/" class="active"><span>🏠</span><span>Inicio</span></a>
   <a href="/collection"><span>📚</span><span>Colección</span></a>
   <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
+  <a href="/trades"><span>🔄</span><span>Trades</span></a>
   <a href="/stats"><span>📈</span><span>Stats</span></a>
 </nav>
 
@@ -109,9 +112,32 @@ async function loadOtherUsers() {
   ).join('');
 }
 
+async function loadAlerts() {
+  try {
+    const r = await fetch('/api/alerts');
+    const data = await r.json();
+    const sec = document.getElementById('alerts-section');
+    const alerts = [];
+    if (data.old_cards_count > 0) {
+      const names = data.old_cards.slice(0, 3).map(c => c.player).join(', ');
+      const extra = data.old_cards_count > 3 ? ` y ${data.old_cards_count - 3} más` : '';
+      alerts.push(`<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:20px">⚠️</span>
+        <div>
+          <strong>Tienes ${data.old_cards_count} carta${data.old_cards_count>1?'s':''} con más de 6 meses en tu colección</strong>
+          <div style="font-size:13px;color:#666;margin-top:4px">${names}${extra}</div>
+          <a href="/collection" style="font-size:13px;color:#856404;font-weight:600">Ver colección →</a>
+        </div>
+      </div>`);
+    }
+    sec.innerHTML = alerts.join('');
+  } catch(e) {}
+}
+
 loadStats();
 loadRecent();
 loadOtherUsers();
+loadAlerts();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
