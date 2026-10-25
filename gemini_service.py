@@ -36,7 +36,7 @@ Devuelve SOLO un JSON válido (sin texto, sin markdown):
 {
   "player": "nombre del jugador o Pokémon",
   "year": 2024,
-  "sport": "fútbol|baloncesto|béisbol|fútbol americano|hockey|pokemon|otro",
+  "sport": "fútbol|baloncesto|béisbol|fútbol americano|hockey|golf|pokemon|otro",
   "team": "equipo del jugador o tipo del Pokémon",
   "set_name": "nombre COMPLETO del set incluyendo marca",
   "variant": "variante/parallel/insert. Nunca null si hay alguna. Para Pokémon incluir rareza.",
