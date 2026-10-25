@@ -27,7 +27,7 @@
 <body>
 
 <div class="nav">
-  <a href="/" class="nav-back">‹</a>
+  <a href="/" class="nav-back">&#x2039;</a>
   <h1>Estadísticas</h1>
   <span style="color:white;font-size:13px;opacity:.8">{{ username }}</span>
 </div>
@@ -37,11 +37,11 @@
 </div>
 
 <nav class="bottom-nav">
-  <a href="/"><span>🏠</span><span>Inicio</span></a>
-  <a href="/collection"><span>📚</span><span>Colección</span></a>
-  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
-  <a href="/trades"><span>🔄</span><span>Trades</span></a>
-  <a href="/stats" class="active"><span>📈</span><span>Stats</span></a>
+  <a href="/"><span>&#x1F3E0;</span><span>Inicio</span></a>
+  <a href="/collection"><span>&#x1F4DA;</span><span>Colección</span></a>
+  <a href="/add" class="add-btn"><span>&#x2795;</span><span>Añadir</span></a>
+  <a href="/trades"><span>&#x1F504;</span><span>Trades</span></a>
+  <a href="/stats" class="active"><span>&#x1F4C8;</span><span>Stats</span></a>
 </nav>
 
 <script>
@@ -51,37 +51,71 @@ function fmt(v) {
 }
 
 async function load() {
-  const [r1, r2] = await Promise.all([
+  const [r1, r2, r3] = await Promise.all([
     fetch('/api/stats/detail'),
     fetch('/api/profit/periods'),
+    fetch('/api/cards?status=owned'),
   ]);
   const d = await r1.json();
   const periods = await r2.json();
+  const allOwned = await r3.json();
   const g = d.general;
   const sports = d.by_sport;
   const top = d.top_cards;
 
+  const personal = allOwned.filter(c => c.personal_collection);
+  const trading = allOwned.filter(c => !c.personal_collection);
+  const sumInv = arr => arr.reduce((a, c) => a + (c.purchase_price || 0), 0);
+  const sumVal = arr => arr.reduce((a, c) => a + (c.market_price || c.purchase_price || 0), 0);
+  const pInv = sumInv(personal), pVal = sumVal(personal);
+  const tInv = sumInv(trading), tVal = sumVal(trading);
+  const pLatent = pVal - pInv, tLatent = tVal - tInv;
+
   const profit = g.total_profit || 0;
-  const latent = (g.current_value || 0) - (g.total_invested || 0);
   const maxSport = sports.length ? Math.max(...sports.map(s => s.total)) : 1;
 
   document.getElementById('content').innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
-      <div class="stat-big">
-        <div class="stat-big-label">Cartas en posesión</div>
-        <div class="stat-big-value red">${g.owned || 0}</div>
+    <div class="form-section" style="margin-bottom:12px">
+      <h2>🔄 Trading</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="stat-big" style="margin-bottom:0">
+          <div class="stat-big-label">Cartas</div>
+          <div class="stat-big-value red">${trading.length}</div>
+        </div>
+        <div class="stat-big" style="margin-bottom:0">
+          <div class="stat-big-label">Invertido</div>
+          <div class="stat-big-value" style="font-size:18px">${fmt(tInv)}</div>
+        </div>
+        <div class="stat-big" style="margin-bottom:0">
+          <div class="stat-big-label">Valor actual</div>
+          <div class="stat-big-value" style="font-size:18px">${fmt(tVal)}</div>
+        </div>
+        <div class="stat-big" style="margin-bottom:0">
+          <div class="stat-big-label">Plus/menos latente</div>
+          <div class="stat-big-value ${tLatent >= 0 ? 'green' : 'red'}" style="font-size:18px">${tLatent >= 0 ? '+' : ''}${fmt(tLatent)}</div>
+        </div>
       </div>
-      <div class="stat-big">
-        <div class="stat-big-label">Total invertido</div>
-        <div class="stat-big-value">${fmt(g.total_invested)}</div>
-      </div>
-      <div class="stat-big">
-        <div class="stat-big-label">Valor actual</div>
-        <div class="stat-big-value">${fmt(g.current_value)}</div>
-      </div>
-      <div class="stat-big">
-        <div class="stat-big-label">Plus/menos latente</div>
-        <div class="stat-big-value ${latent >= 0 ? 'green' : 'red'}">${latent >= 0 ? '+' : ''}${fmt(latent)}</div>
+    </div>
+
+    <div class="form-section" style="margin-bottom:12px">
+      <h2>🏡 Colección personal</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="stat-big" style="margin-bottom:0">
+          <div class="stat-big-label">Cartas</div>
+          <div class="stat-big-value red">${personal.length}</div>
+        </div>
+        <div class="stat-big" style="margin-bottom:0">
+          <div class="stat-big-label">Invertido</div>
+          <div class="stat-big-value" style="font-size:18px">${fmt(pInv)}</div>
+        </div>
+        <div class="stat-big" style="margin-bottom:0">
+          <div class="stat-big-label">Valor actual</div>
+          <div class="stat-big-value" style="font-size:18px">${fmt(pVal)}</div>
+        </div>
+        <div class="stat-big" style="margin-bottom:0">
+          <div class="stat-big-label">Plus/menos latente</div>
+          <div class="stat-big-value ${pLatent >= 0 ? 'green' : 'red'}" style="font-size:18px">${pLatent >= 0 ? '+' : ''}${fmt(pLatent)}</div>
+        </div>
       </div>
     </div>
 
