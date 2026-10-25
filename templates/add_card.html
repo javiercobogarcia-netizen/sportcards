@@ -171,6 +171,14 @@
       </div>
     </div>
 
+    <div class="form-section">
+      <h2>🏡 Colección personal</h2>
+      <label style="display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer">
+        <input type="checkbox" id="f-personal" style="width:20px;height:20px;accent-color:var(--red)">
+        Esta carta es de mi colección personal (no se incluirá en avisos de antigüedad)
+      </label>
+    </div>
+
     <div id="alert-save"></div>
     <button class="btn btn-primary" id="btn-save" onclick="saveCard()">💾 Guardar carta</button>
     <div style="height:16px"></div>
@@ -182,6 +190,7 @@
   <a href="/"><span>🏠</span><span>Inicio</span></a>
   <a href="/collection"><span>📚</span><span>Colección</span></a>
   <a href="/add" class="add-btn active"><span>➕</span><span>Añadir</span></a>
+  <a href="/trades"><span>🔄</span><span>Trades</span></a>
   <a href="/stats"><span>📈</span><span>Stats</span></a>
 </nav>
 
@@ -205,7 +214,6 @@ function fixImageOrientation(file) {
   });
 }
 
-// Fecha de hoy por defecto
 document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 
 function previewPhoto(input, side) {
@@ -323,6 +331,7 @@ async function saveCard() {
     photo_back: savedPhotos.back,
     market_price: window._marketPrice || null,
     market_price_updated: window._marketUpdated || null,
+    personal_collection: document.getElementById('f-personal').checked ? 1 : 0,
   };
 
   try {
