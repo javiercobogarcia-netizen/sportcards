@@ -12,7 +12,9 @@ load_dotenv()
 from database import (init_db as _init_db, get_stats, get_all_cards, get_card, create_card, update_card,
                       add_price_history, get_price_history, get_filter_options,
                       create_user, verify_user, get_user, get_all_users,
-                      get_stats_by_sport, get_top_cards, get_stats_by_player)
+                      get_stats_by_sport, get_top_cards, get_stats_by_player,
+                      get_alerts, get_profit_by_period,
+                      create_trade, get_trades, get_trade)
 from gemini_service import identify_card
 from ebay_service import search_card_price
 from qr_service import generate_qr
@@ -23,7 +25,6 @@ CORS(app)
 app.secret_key = os.getenv('SECRET_KEY', 'sportcards-2024')
 app.permanent_session_lifetime = timedelta(days=365)
 
-# Inicializar BD siempre (también con gunicorn en producción)
 _init_db()
 
 DATA_DIR = os.getenv('DATA_DIR', os.path.dirname(__file__))
@@ -63,8 +64,6 @@ def save_photo(file, subfolder):
     img.thumbnail((1200, 1200), Image.LANCZOS)
     img.save(path, 'JPEG', quality=75, optimize=True, exif=b'')
     return path, f'uploads/{subfolder}/{filename}'
-
-# --- Páginas ---
 
 @app.route('/login', methods=['GET'])
 def login_page():
@@ -134,6 +133,11 @@ def card_detail(card_id):
 def stats_page():
     return render_template('stats.html', username=session.get('username'))
 
+@app.route('/trades')
+@login_required
+def trades_page():
+    return render_template('trades.html')
+
 @app.route('/user/<username>')
 @login_required
 def user_collection(username):
@@ -146,8 +150,6 @@ def user_collection(username):
     return render_template('collection_readonly.html',
                            target_username=target['username'],
                            viewer_username=session.get('username'))
-
-# --- API ---
 
 @app.route('/api/users')
 @login_required
@@ -197,6 +199,36 @@ def api_stats_detail():
         'general': get_stats(user_id=uid)
     })
 
+@app.route('/api/alerts')
+@login_required
+def api_alerts():
+    return jsonify(get_alerts(user_id=current_user_id()))
+
+@app.route('/api/profit/periods')
+@login_required
+def api_profit_periods():
+    return jsonify(get_profit_by_period(user_id=current_user_id()))
+
+@app.route('/api/trades', methods=['GET'])
+@login_required
+def api_trades():
+    return jsonify(get_trades(user_id=current_user_id()))
+
+@app.route('/api/trades', methods=['POST'])
+@login_required
+def api_create_trade():
+    data = request.get_json()
+    trade_id = create_trade(data, user_id=current_user_id())
+    return jsonify({'id': trade_id}), 201
+
+@app.route('/api/trade/<int:trade_id>', methods=['GET'])
+@login_required
+def api_trade(trade_id):
+    trade = get_trade(trade_id, user_id=current_user_id())
+    if not trade:
+        return jsonify({'error': 'Trade no encontrado'}), 404
+    return jsonify(trade)
+
 @app.route('/api/cards')
 @login_required
 def api_cards():
@@ -227,14 +259,12 @@ def api_card(card_id):
 def api_identify():
     front_file = request.files.get('front')
     back_file = request.files.get('back')
-
     if not front_file:
         return jsonify({'error': 'Foto delantera requerida'}), 400
-
     try:
         front_path, front_rel = save_photo(front_file, 'fronts')
     except Exception as e:
-        return jsonify({'error': f'Error procesando foto delantera: {str(e)} (filename={front_file.filename}, ct={front_file.content_type})'}), 400
+        return jsonify({'error': f'Error procesando foto delantera: {str(e)}'}), 400
     back_path = None
     back_rel = None
     if back_file:
@@ -242,25 +272,17 @@ def api_identify():
             back_path, back_rel = save_photo(back_file, 'backs')
         except Exception:
             pass
-
     data, error = identify_card(front_path, back_path)
     if error:
         return jsonify({'error': error}), 500
-
     data['photo_front'] = front_rel
     data['photo_back'] = back_rel
-
-    # Precio de eBay automático (si está configurado)
     if data.get('player') and data.get('sport') != 'pokemon':
-        result, _ = search_card_price(
-            data.get('player'), data.get('year'), data.get('set_name'),
-            data.get('numbering'), None, None
-        )
+        result, _ = search_card_price(data.get('player'), data.get('year'), data.get('set_name'), data.get('numbering'), None, None)
         if result:
             data['market_price'] = result['average']
             data['market_price_updated'] = result['updated']
             data['ebay_result'] = result
-
     return jsonify(data)
 
 @app.route('/api/cards', methods=['POST'])
@@ -269,17 +291,13 @@ def api_create_card():
     data = request.get_json()
     if not data or not data.get('player'):
         return jsonify({'error': 'El nombre del jugador es requerido'}), 400
-
     card_id = create_card(data, user_id=current_user_id())
-
     qr_path = generate_qr(card_id)
     update_card(card_id, {'qr_code': qr_path})
-
     if data.get('purchase_price'):
         add_price_history(card_id, data['purchase_price'], 'compra')
     if data.get('market_price'):
         add_price_history(card_id, data['market_price'], 'ebay')
-
     return jsonify({'id': card_id, 'qr_code': qr_path}), 201
 
 @app.route('/api/card/<int:card_id>', methods=['PUT'])
@@ -331,11 +349,7 @@ def api_sell_card(card_id):
     sale_price = data.get('sale_price')
     if not sale_price:
         return jsonify({'error': 'Precio de venta requerido'}), 400
-    update_card(card_id, {
-        'sale_price': sale_price,
-        'sale_date': data.get('sale_date', datetime.now().strftime('%Y-%m-%d')),
-        'status': 'sold'
-    })
+    update_card(card_id, {'sale_price': sale_price, 'sale_date': data.get('sale_date', datetime.now().strftime('%Y-%m-%d')), 'status': 'sold'})
     add_price_history(card_id, sale_price, 'venta')
     card = get_card(card_id)
     purchase = card.get('purchase_price') or 0
@@ -349,23 +363,23 @@ def api_market_price(card_id):
     card = get_card(card_id, user_id=current_user_id())
     if not card:
         return jsonify({'error': 'Carta no encontrada'}), 404
-
     if card.get('sport') == 'pokemon':
         result, error = search_pokemon_price(card.get('player'), card.get('set_name'), card.get('card_number'))
     else:
-        result, error = search_card_price(
-            card.get('player'), card.get('year'), card.get('set_name'),
-            card.get('numbering'), card.get('grading_company'), card.get('grade')
-        )
-
+        result, error = search_card_price(card.get('player'), card.get('year'), card.get('set_name'), card.get('numbering'), card.get('grading_company'), card.get('grade'))
     if error:
         return jsonify({'error': error}), 500
-
-    update_card(card_id, {
-        'market_price': result['average'],
-        'market_price_updated': result['updated']
-    })
+    update_card(card_id, {'market_price': result['average'], 'market_price_updated': result['updated']})
     add_price_history(card_id, result['average'], 'mercado')
+    return jsonify(result)
+
+@app.route('/api/ebay-search', methods=['POST'])
+@login_required
+def api_ebay_search():
+    data = request.get_json()
+    result, error = search_card_price(data.get('player'), data.get('year'), data.get('set_name'), data.get('numbering'), None, None)
+    if error:
+        return jsonify({'error': error}), 500
     return jsonify(result)
 
 @app.route('/api/export')
@@ -415,7 +429,6 @@ def fix_rotations():
     return jsonify({'fixed': fixed, 'errors': errors})
 
 def search_pokemon_price(name, set_name, card_number):
-    """Busca precio en eBay para cartas Pokémon."""
     return search_card_price(name, None, set_name, None, None, None)
 
 if __name__ == '__main__':
