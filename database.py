@@ -59,14 +59,45 @@ def init_db():
             recorded_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (card_id) REFERENCES cards(id)
         );
+
+        CREATE TABLE IF NOT EXISTS trades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER DEFAULT 1,
+            trade_date TEXT,
+            notes TEXT,
+            counterpart TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS trade_cards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trade_id INTEGER NOT NULL,
+            card_id INTEGER,
+            direction TEXT NOT NULL,
+            player TEXT,
+            description TEXT,
+            value REAL,
+            FOREIGN KEY (trade_id) REFERENCES trades(id),
+            FOREIGN KEY (card_id) REFERENCES cards(id)
+        );
     ''')
-    try:
-        c.execute('ALTER TABLE cards ADD COLUMN user_id INTEGER DEFAULT 1')
-        conn.commit()
-    except Exception:
-        pass
+    # Migraciones para bases de datos antiguas
+    migrations = [
+        'ALTER TABLE cards ADD COLUMN user_id INTEGER DEFAULT 1',
+        'ALTER TABLE cards ADD COLUMN personal_collection INTEGER DEFAULT 0',
+        'ALTER TABLE cards ADD COLUMN traded_in_trade_id INTEGER',
+    ]
+    for sql in migrations:
+        try:
+            c.execute(sql)
+            conn.commit()
+        except Exception:
+            pass
     conn.commit()
     conn.close()
+
+# --- Usuarios ---
 
 def create_user(username, password):
     conn = get_db()
@@ -113,6 +144,8 @@ def get_all_users():
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+# --- Cartas ---
 
 def get_stats(user_id=None):
     conn = get_db()
@@ -201,8 +234,9 @@ def create_card(data, user_id=1):
         INSERT INTO cards
         (user_id, player, year, sport, team, set_name, variant, card_number, numbering,
          graded, grading_company, grade, photo_front, photo_back,
-         purchase_price, purchase_date, market_price, market_price_updated, notes, gemini_raw)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         purchase_price, purchase_date, market_price, market_price_updated, notes, gemini_raw,
+         personal_collection)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ''', (
         user_id,
         data.get('player'), data.get('year'), data.get('sport'), data.get('team'),
@@ -211,7 +245,8 @@ def create_card(data, user_id=1):
         data.get('grade'), data.get('photo_front'), data.get('photo_back'),
         data.get('purchase_price'), data.get('purchase_date'),
         data.get('market_price'), data.get('market_price_updated'),
-        data.get('notes'), data.get('gemini_raw')
+        data.get('notes'), data.get('gemini_raw'),
+        1 if data.get('personal_collection') else 0
     ))
     card_id = c.lastrowid
     conn.commit()
@@ -226,7 +261,8 @@ def update_card(card_id, data):
     allowed = ['player','year','sport','team','set_name','variant','card_number',
                'numbering','graded','grading_company','grade','purchase_price',
                'purchase_date','sale_price','sale_date','status','market_price',
-               'market_price_updated','qr_code','notes']
+               'market_price_updated','qr_code','notes','personal_collection',
+               'traded_in_trade_id']
     for field in allowed:
         if field in data:
             fields.append(f'{field} = ?')
@@ -307,3 +343,144 @@ def get_stats_by_player(user_id=None, limit=20):
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def get_alerts(user_id=None):
+    conn = get_db()
+    c = conn.cursor()
+    where = 'AND user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+    c.execute(f'''
+        SELECT COUNT(*) as count FROM cards
+        WHERE status='owned'
+        AND personal_collection = 0
+        AND purchase_date IS NOT NULL
+        AND purchase_date <= date('now', '-6 months')
+        {where}
+    ''', params)
+    old_cards = c.fetchone()['count']
+
+    c.execute(f'''
+        SELECT id, player, purchase_date FROM cards
+        WHERE status='owned'
+        AND personal_collection = 0
+        AND purchase_date IS NOT NULL
+        AND purchase_date <= date('now', '-6 months')
+        {where}
+        ORDER BY purchase_date ASC
+        LIMIT 10
+    ''', params)
+    old_cards_list = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return {'old_cards_count': old_cards, 'old_cards': old_cards_list}
+
+def get_profit_by_period(user_id=None):
+    conn = get_db()
+    c = conn.cursor()
+    where = 'AND user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+
+    def query(period_filter):
+        c.execute(f'''
+            SELECT
+                COUNT(*) as sold_count,
+                COALESCE(SUM(sale_price - COALESCE(purchase_price, 0)), 0) as profit
+            FROM cards
+            WHERE status='sold' AND sale_date IS NOT NULL
+            AND sale_date >= {period_filter}
+            {where}
+        ''', params)
+        return dict(c.fetchone())
+
+    result = {
+        'today':   query("date('now')"),
+        'week':    query("date('now', '-7 days')"),
+        'month':   query("date('now', '-30 days')"),
+        'quarter': query("date('now', '-90 days')"),
+        'year':    query("date('now', '-365 days')"),
+        'all':     query("'1900-01-01'"),
+    }
+
+    c.execute(f'''
+        SELECT
+            strftime('%Y-%m', sale_date) as month,
+            COUNT(*) as sold_count,
+            COALESCE(SUM(sale_price - COALESCE(purchase_price, 0)), 0) as profit
+        FROM cards
+        WHERE status='sold' AND sale_date IS NOT NULL
+        AND sale_date >= date('now', '-12 months')
+        {where}
+        GROUP BY month ORDER BY month ASC
+    ''', params)
+    result['by_month'] = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return result
+
+# --- Trades ---
+
+def create_trade(data, user_id=1):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO trades (user_id, trade_date, notes, counterpart)
+        VALUES (?, ?, ?, ?)
+    ''', (user_id, data.get('trade_date'), data.get('notes'), data.get('counterpart')))
+    trade_id = c.lastrowid
+
+    for card in data.get('give', []):
+        card_id = card.get('card_id')
+        value = card.get('value')
+        c.execute('''
+            INSERT INTO trade_cards (trade_id, card_id, direction, player, description, value)
+            VALUES (?, ?, 'give', ?, ?, ?)
+        ''', (trade_id, card_id, card.get('player'), card.get('description'), value))
+        if card_id:
+            c.execute("UPDATE cards SET status='traded', traded_in_trade_id=? WHERE id=?",
+                      (trade_id, card_id))
+
+    for card in data.get('receive', []):
+        card_id = card.get('card_id')
+        c.execute('''
+            INSERT INTO trade_cards (trade_id, card_id, direction, player, description, value)
+            VALUES (?, ?, 'receive', ?, ?, ?)
+        ''', (trade_id, card_id, card.get('player'), card.get('description'), card.get('value')))
+
+    conn.commit()
+    conn.close()
+    return trade_id
+
+def get_trades(user_id=None):
+    conn = get_db()
+    c = conn.cursor()
+    where = 'WHERE t.user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+    c.execute(f'''
+        SELECT t.*,
+            (SELECT COALESCE(SUM(tc.value),0) FROM trade_cards tc WHERE tc.trade_id=t.id AND tc.direction='give') as give_value,
+            (SELECT COALESCE(SUM(tc.value),0) FROM trade_cards tc WHERE tc.trade_id=t.id AND tc.direction='receive') as receive_value
+        FROM trades t {where}
+        ORDER BY t.trade_date DESC, t.created_at DESC
+    ''', params)
+    trades = [dict(r) for r in c.fetchall()]
+    for trade in trades:
+        c.execute("SELECT * FROM trade_cards WHERE trade_id=?", (trade['id'],))
+        trade['cards'] = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return trades
+
+def get_trade(trade_id, user_id=None):
+    conn = get_db()
+    c = conn.cursor()
+    if user_id:
+        c.execute('SELECT * FROM trades WHERE id=? AND user_id=?', (trade_id, user_id))
+    else:
+        c.execute('SELECT * FROM trades WHERE id=?', (trade_id,))
+    trade = c.fetchone()
+    if not trade:
+        conn.close()
+        return None
+    trade = dict(trade)
+    c.execute("SELECT * FROM trade_cards WHERE trade_id=?", (trade_id,))
+    trade['cards'] = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return trade
