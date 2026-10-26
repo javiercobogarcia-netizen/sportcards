@@ -5,62 +5,290 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111111">
-<title>Trades — SportCards</title>
+<title>Trades &#8212; SportCards</title>
 <link rel="stylesheet" href="/static/css/app.css">
+<style>
+/* === TRADE MODAL === */
+.trade-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  overflow-y: auto;
+  padding: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+.trade-modal-box {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  border: 1px solid #333;
+}
+.trade-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.trade-modal-title { font-size: 18px; font-weight: 700; color: var(--gold, #C9961A); }
+.trade-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+/* === CARD PICKER === */
+.card-picker { margin-bottom: 4px; }
+.card-picker-search {
+  position: relative;
+}
+.card-picker-search input {
+  width: 100%;
+  padding: 11px 14px 11px 38px;
+  border: 1.5px solid #333;
+  border-radius: 50px;
+  font-size: 14px;
+  background: #111;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.card-picker-search input:focus { border-color: var(--gold, #C9961A); }
+.card-picker-search::before {
+  content: '\1F50D';
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  pointer-events: none;
+}
+.card-picker-results {
+  display: none;
+  position: absolute;
+  left: 0; right: 0;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  margin-top: 4px;
+  z-index: 10;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.card-picker-results.open { display: block; }
+.picker-result-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #222;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.picker-result-item:last-child { border-bottom: none; }
+.picker-result-item:hover, .picker-result-item:active { background: #252525; }
+.picker-result-item.already-added { opacity: 0.4; pointer-events: none; }
+.picker-result-name { font-size: 14px; font-weight: 600; color: #fff; }
+.picker-result-meta { font-size: 12px; color: #888; margin-top: 2px; }
+.picker-result-price { font-size: 13px; font-weight: 600; color: var(--gold, #C9961A); flex-shrink: 0; margin-left: 8px; }
+.picker-no-results { padding: 14px; text-align: center; color: #666; font-size: 13px; }
+
+/* === SELECTED CHIPS === */
+.card-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 0; }
+.card-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 20px;
+  padding: 6px 10px 6px 12px;
+  font-size: 13px;
+  animation: chipIn 0.15s ease;
+}
+.card-chip-name { font-weight: 600; color: #fff; }
+.card-chip-price { color: var(--gold, #C9961A); font-size: 12px; }
+.card-chip-remove {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  margin-left: 2px;
+  transition: color 0.15s;
+}
+.card-chip-remove:hover { color: #f87171; }
+@keyframes chipIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+
+/* === TRADE SECTIONS === */
+.trade-section {
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid #2a2a2a;
+}
+.trade-section-give { background: #1a0e0e; border-color: #3a1a1a; }
+.trade-section-receive { background: #0e1a0e; border-color: #1a3a1a; }
+.trade-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.trade-section-give .trade-section-title { color: #f87171; }
+.trade-section-receive .trade-section-title { color: #4ade80; }
+.trade-section-total { font-size: 12px; font-weight: 400; }
+.trade-section-give .trade-section-total { color: #f87171; }
+.trade-section-receive .trade-section-total { color: #4ade80; }
+
+/* RECEIVE TABS */
+.receive-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.receive-tab {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1.5px solid #333;
+  background: #111;
+  color: #888;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.receive-tab.active { background: #162116; border-color: #4ade80; color: #4ade80; }
+
+/* NEW CARD FORM */
+.new-card-form { display: none; }
+.new-card-form.open { display: block; }
+
+/* PROFIT CARD */
+.profit-card {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.profit-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+.profit-value { font-size: 26px; font-weight: 700; }
+</style>
 </head>
 <body>
 
 <div class="nav">
-  <a href="/" class="nav-back">‹</a>
+  <a href="/" class="nav-back">&#8249;</a>
   <h1>Trades</h1>
-  <button onclick="showNewTrade()" style="background:none;border:none;color:white;font-size:22px;cursor:pointer" title="Nuevo trade">➕</button>
+  <button onclick="showNewTrade()" style="background:none;border:none;color:white;font-size:22px;cursor:pointer" title="Nuevo trade">&#43;</button>
 </div>
 
 <!-- MODAL NUEVO TRADE -->
-<div id="trade-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;overflow-y:auto;padding:16px">
-  <div style="background:white;border-radius:16px;padding:20px;max-width:600px;margin:0 auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="font-size:18px;color:var(--red)">🔄 Nuevo trade</h2>
-      <button onclick="hideNewTrade()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666">×</button>
+<div id="trade-modal" class="trade-modal-overlay">
+  <div class="trade-modal-box">
+
+    <div class="trade-modal-header">
+      <div class="trade-modal-title">&#8644; Nuevo trade</div>
+      <button class="trade-modal-close" onclick="hideNewTrade()">&#215;</button>
     </div>
 
     <div class="form-row">
-      <div class="form-group"><label>Fecha del trade</label><input type="date" id="t-date"></div>
-      <div class="form-group"><label>Con quién (opcional)</label><input type="text" id="t-counterpart" placeholder="Nombre o usuario"></div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="t-date"></div>
+      <div class="form-group"><label>Con qui&#233;n (opcional)</label><input type="text" id="t-counterpart" placeholder="Nombre o usuario"></div>
     </div>
     <div class="form-group"><label>Notas</label><textarea id="t-notes" rows="2" placeholder="Detalles del trade..."></textarea></div>
 
     <!-- CARTAS QUE ENTREGO -->
-    <div style="background:#fff5f5;border-radius:10px;padding:14px;margin-bottom:14px">
-      <h3 style="font-size:15px;color:#c0392b;margin-bottom:10px">📤 Cartas que entrego</h3>
-      <div id="give-cards"></div>
-      <button type="button" onclick="addGiveCard()" class="btn btn-secondary" style="margin-top:8px;font-size:13px">+ Añadir carta de mi colección</button>
-      <div style="margin-top:10px;font-size:14px;font-weight:600;color:#c0392b">
-        Total entregado: <span id="give-total">0.00 €</span>
-        <span style="font-size:12px;color:#999;font-weight:400"> (precio de compra automático)</span>
+    <div class="trade-section trade-section-give">
+      <div class="trade-section-title">
+        <span>&#128228; Cartas que entrego</span>
+        <span class="trade-section-total">Total: <span id="give-total">0.00 &#8364;</span></span>
       </div>
+      <!-- Buscador multi-selecci&#243;n -->
+      <div class="card-picker" style="position:relative">
+        <div class="card-picker-search">
+          <input type="text" id="give-search" placeholder="Buscar carta de mi colecci&#243;n..." autocomplete="off" oninput="filterCards('give')" onfocus="filterCards('give')" onblur="hideResults('give', 200)">
+        </div>
+        <div id="give-results" class="card-picker-results"></div>
+      </div>
+      <div id="give-chips" class="card-chips"></div>
     </div>
 
     <!-- CARTAS QUE RECIBO -->
-    <div style="background:#f0fff4;border-radius:10px;padding:14px;margin-bottom:14px">
-      <h3 style="font-size:15px;color:#27ae60;margin-bottom:10px">📥 Cartas que recibo</h3>
-      <div id="receive-cards"></div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button type="button" onclick="addReceiveExisting()" class="btn btn-secondary" style="font-size:13px">+ De mi colección</button>
-        <button type="button" onclick="addReceiveNew()" class="btn btn-secondary" style="font-size:13px">+ Nueva carta</button>
+    <div class="trade-section trade-section-receive">
+      <div class="trade-section-title">
+        <span>&#128229; Cartas que recibo</span>
+        <span class="trade-section-total">Total: <span id="receive-total">0.00 &#8364;</span></span>
       </div>
-      <div style="margin-top:10px;font-size:14px;font-weight:600;color:#27ae60">
-        Total recibido: <span id="receive-total">0.00 €</span>
+      <div class="receive-tabs">
+        <button class="receive-tab active" id="tab-collection" onclick="switchReceiveTab('collection')">&#128218; De mi colecci&#243;n</button>
+        <button class="receive-tab" id="tab-new" onclick="switchReceiveTab('new')">&#43; Nueva carta</button>
+      </div>
+
+      <!-- Buscador colecci&#243;n (recibir) -->
+      <div id="receive-collection-picker">
+        <div class="card-picker" style="position:relative">
+          <div class="card-picker-search">
+            <input type="text" id="receive-search" placeholder="Buscar carta que recibo..." autocomplete="off" oninput="filterCards('receive')" onfocus="filterCards('receive')" onblur="hideResults('receive', 200)">
+          </div>
+          <div id="receive-results" class="card-picker-results"></div>
+        </div>
+        <div id="receive-chips" class="card-chips"></div>
+      </div>
+
+      <!-- Alta nueva carta -->
+      <div id="receive-new-form" class="new-card-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Jugador *</label>
+            <input type="text" id="new-player" placeholder="Nombre del jugador" oninput="updateNewCardReceive()">
+          </div>
+          <div class="form-group">
+            <label>A&#241;o</label>
+            <input type="text" id="new-year" placeholder="2024">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Set / Colecci&#243;n</label>
+            <input type="text" id="new-set" placeholder="Panini Mosaic...">
+          </div>
+          <div class="form-group">
+            <label>Valor estimado (&#8364;)</label>
+            <input type="number" id="new-value" placeholder="0.00" step="0.01" min="0" oninput="updateNewCardReceive()">
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary" style="font-size:13px;margin-top:4px" onclick="searchEbayNew()">&#128269; Buscar precio en eBay</button>
+        <div id="new-ebay-result" style="font-size:12px;color:#4ade80;margin-top:6px"></div>
       </div>
     </div>
 
-    <div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:14px;text-align:center">
-      <div style="font-size:14px;color:#666">Beneficio del trade</div>
-      <div id="trade-profit" style="font-size:24px;font-weight:700">0.00 €</div>
+    <!-- BENEFICIO -->
+    <div class="profit-card">
+      <div class="profit-label">Beneficio del trade</div>
+      <div class="profit-value" id="trade-profit">0.00 &#8364;</div>
     </div>
 
     <div id="trade-alert"></div>
-    <button class="btn btn-primary" onclick="saveTrade()">💾 Guardar trade</button>
+    <button class="btn btn-primary" onclick="saveTrade()">&#128190; Guardar trade</button>
   </div>
 </div>
 
@@ -71,17 +299,19 @@
 </div>
 
 <nav class="bottom-nav">
-  <a href="/"><span>🏠</span><span>Inicio</span></a>
-  <a href="/collection"><span>📚</span><span>Colección</span></a>
-  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
-  <a href="/trades" class="active"><span>🔄</span><span>Trades</span></a>
-  <a href="/stats"><span>📈</span><span>Stats</span></a>
+  <a href="/"><span>&#127968;</span><span>Inicio</span></a>
+  <a href="/collection"><span>&#128218;</span><span>Colecci&#243;n</span></a>
+  <a href="/add" class="add-btn"><span>&#43;</span><span>A&#241;adir</span></a>
+  <a href="/trades" class="active"><span>&#8644;</span><span>Trades</span></a>
+  <a href="/stats"><span>&#128200;</span><span>Stats</span></a>
 </nav>
 
 <script>
 let ownedCards = [];
-let giveCards = [];
-let receiveCards = [];
+let giveSelected = [];    // [{card_id, player, value}]
+let receiveSelected = []; // [{card_id, player, value, is_new}]
+let newCardReceive = { player: '', year: '', set: '', value: 0 };
+let receiveTab = 'collection';
 
 async function init() {
   const r = await fetch('/api/cards?status=owned');
@@ -89,50 +319,182 @@ async function init() {
   loadTrades();
 }
 
-async function loadTrades() {
-  const r = await fetch('/api/trades');
-  const trades = await r.json();
-  const container = document.getElementById('trades-list');
-  if (!trades.length) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><p>Aún no tienes trades.<br>Pulsa ➕ para registrar uno.</p></div>';
+// ========== BUSCADOR MULTI-SELECCION ==========
+
+function filterCards(side) {
+  const query = document.getElementById(side + '-search').value.trim().toLowerCase();
+  const resultsEl = document.getElementById(side + '-results');
+
+  const selected = side === 'give' ? giveSelected : receiveSelected.filter(c => !c.is_new);
+  const selectedIds = selected.map(c => c.card_id);
+
+  let filtered = ownedCards;
+  if (query) {
+    filtered = ownedCards.filter(c =>
+      (c.player || '').toLowerCase().includes(query) ||
+      (c.set_name || '').toLowerCase().includes(query) ||
+      (c.team || '').toLowerCase().includes(query)
+    );
+  }
+
+  if (!filtered.length) {
+    resultsEl.innerHTML = '<div class="picker-no-results">No se encontraron cartas</div>';
+    resultsEl.classList.add('open');
     return;
   }
-  container.innerHTML = trades.map(t => {
-    const profit = (t.receive_value || 0) - (t.give_value || 0);
-    const cls = profit >= 0 ? 'roi-positive' : 'roi-negative';
-    const giveList = t.cards.filter(c => c.direction === 'give');
-    const receiveList = t.cards.filter(c => c.direction === 'receive');
-    return `<div style="background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:13px;color:#999">${t.trade_date || 'Sin fecha'}${t.counterpart ? ' · con ' + t.counterpart : ''}</div>
-        <div class="${cls}" style="font-size:16px;font-weight:700">${profit >= 0 ? '+' : ''}${profit.toFixed(2)} €</div>
+
+  resultsEl.innerHTML = filtered.slice(0, 12).map(c => {
+    const alreadyAdded = selectedIds.includes(c.id);
+    const price = c.purchase_price ? c.purchase_price.toFixed(2) + ' &#8364;' : '&#8212;';
+    const meta = [c.year, c.set_name, c.team].filter(Boolean).join(' &#183; ');
+    return `<div class="picker-result-item ${alreadyAdded ? 'already-added' : ''}" onmousedown="selectCard('${side}', ${c.id})">
+      <div>
+        <div class="picker-result-name">${c.player}</div>
+        ${meta ? `<div class="picker-result-meta">${meta}</div>` : ''}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <div style="font-size:12px;font-weight:600;color:#c0392b;margin-bottom:4px">📤 Entrego</div>
-          ${giveList.map(c => `<div style="font-size:13px">${c.player || c.description || '—'} <span style="color:#999">${c.value ? c.value.toFixed(2)+'€' : ''}</span></div>`).join('')}
-          <div style="font-size:12px;color:#c0392b;margin-top:4px">Total: ${(t.give_value||0).toFixed(2)} €</div>
-        </div>
-        <div>
-          <div style="font-size:12px;font-weight:600;color:#27ae60;margin-bottom:4px">📥 Recibo</div>
-          ${receiveList.map(c => `<div style="font-size:13px">${c.player || c.description || '—'} <span style="color:#999">${c.value ? c.value.toFixed(2)+'€' : ''}</span></div>`).join('')}
-          <div style="font-size:12px;color:#27ae60;margin-top:4px">Total: ${(t.receive_value||0).toFixed(2)} €</div>
-        </div>
+      <div class="picker-result-price">${alreadyAdded ? '&#10003;' : price}</div>
+    </div>`;
+  }).join('');
+  resultsEl.classList.add('open');
+}
+
+function hideResults(side, delay) {
+  setTimeout(() => {
+    const el = document.getElementById(side + '-results');
+    if (el) el.classList.remove('open');
+  }, delay);
+}
+
+function selectCard(side, cardId) {
+  const card = ownedCards.find(c => c.id === cardId);
+  if (!card) return;
+
+  if (side === 'give') {
+    if (giveSelected.find(c => c.card_id === cardId)) return;
+    giveSelected.push({ card_id: card.id, player: card.player, value: card.purchase_price || 0, set_name: card.set_name || '' });
+    document.getElementById('give-search').value = '';
+    document.getElementById('give-results').classList.remove('open');
+    renderChips('give');
+  } else {
+    if (receiveSelected.find(c => !c.is_new && c.card_id === cardId)) return;
+    receiveSelected.push({ card_id: card.id, player: card.player, value: card.purchase_price || 0, set_name: card.set_name || '', is_new: false });
+    document.getElementById('receive-search').value = '';
+    document.getElementById('receive-results').classList.remove('open');
+    renderChips('receive');
+  }
+  updateTotals();
+}
+
+function renderChips(side) {
+  const items = side === 'give' ? giveSelected : receiveSelected.filter(c => !c.is_new);
+  const chipsEl = document.getElementById(side + '-chips');
+  chipsEl.innerHTML = items.map((c, i) => {
+    const price = c.value ? c.value.toFixed(2) + ' &#8364;' : '&#8212;';
+    return `<div class="card-chip">
+      <div>
+        <span class="card-chip-name">${c.player}</span>
+        ${c.set_name ? `<span style="color:#666;font-size:11px"> &#183; ${c.set_name}</span>` : ''}
+        <span class="card-chip-price"> ${price}</span>
       </div>
-      ${t.notes ? `<div style="font-size:12px;color:#999;margin-top:8px;border-top:1px solid #eee;padding-top:8px">${t.notes}</div>` : ''}
+      <button class="card-chip-remove" onmousedown="removeChip('${side}', ${c.card_id})" title="Quitar">&times;</button>
     </div>`;
   }).join('');
 }
 
+function removeChip(side, cardId) {
+  if (side === 'give') {
+    giveSelected = giveSelected.filter(c => c.card_id !== cardId);
+    renderChips('give');
+  } else {
+    receiveSelected = receiveSelected.filter(c => c.is_new || c.card_id !== cardId);
+    renderChips('receive');
+  }
+  updateTotals();
+}
+
+// ========== TABS RECIBIR ==========
+
+function switchReceiveTab(tab) {
+  receiveTab = tab;
+  document.getElementById('tab-collection').classList.toggle('active', tab === 'collection');
+  document.getElementById('tab-new').classList.toggle('active', tab === 'new');
+  document.getElementById('receive-collection-picker').style.display = tab === 'collection' ? '' : 'none';
+  document.getElementById('receive-new-form').classList.toggle('open', tab === 'new');
+}
+
+function updateNewCardReceive() {
+  newCardReceive.player = (document.getElementById('new-player').value || '').trim();
+  newCardReceive.value = parseFloat(document.getElementById('new-value').value) || 0;
+  updateTotals();
+}
+
+async function searchEbayNew() {
+  const player = document.getElementById('new-player').value.trim();
+  const set = document.getElementById('new-set').value.trim();
+  if (!player) { alert('Introduce el jugador primero'); return; }
+  const btn = document.querySelector('#receive-new-form .btn');
+  btn.textContent = 'Buscando...';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/ebay-search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ player, set_name: set })
+    });
+    const data = await r.json();
+    if (r.ok && data.average) {
+      document.getElementById('new-value').value = data.average.toFixed(2);
+      newCardReceive.value = data.average;
+      document.getElementById('new-ebay-result').textContent = '&#9989; eBay: ' + data.average.toFixed(2) + ' &#8364; (' + data.samples + ' ventas)';
+      updateTotals();
+    } else {
+      document.getElementById('new-ebay-result').textContent = 'Sin resultados. Introduce el valor manualmente.';
+    }
+  } catch(e) {
+    document.getElementById('new-ebay-result').textContent = 'Error al conectar con eBay.';
+  }
+  btn.textContent = '&#128269; Buscar precio en eBay';
+  btn.disabled = false;
+}
+
+// ========== TOTALES ==========
+
+function updateTotals() {
+  const giveTotal = giveSelected.reduce((s, c) => s + (c.value || 0), 0);
+
+  let receiveTotal = receiveSelected.filter(c => !c.is_new).reduce((s, c) => s + (c.value || 0), 0);
+  if (receiveTab === 'new') receiveTotal += newCardReceive.value || 0;
+
+  const profit = receiveTotal - giveTotal;
+  document.getElementById('give-total').textContent = giveTotal.toFixed(2) + ' &#8364;';
+  document.getElementById('receive-total').textContent = receiveTotal.toFixed(2) + ' &#8364;';
+  const el = document.getElementById('trade-profit');
+  el.textContent = (profit >= 0 ? '+' : '') + profit.toFixed(2) + ' &#8364;';
+  el.style.color = profit >= 0 ? '#4ade80' : '#f87171';
+}
+
+// ========== MODAL ==========
+
 function showNewTrade() {
-  giveCards = [];
-  receiveCards = [];
-  document.getElementById('give-cards').innerHTML = '';
-  document.getElementById('receive-cards').innerHTML = '';
+  giveSelected = [];
+  receiveSelected = [];
+  newCardReceive = { player: '', year: '', set: '', value: 0 };
+  document.getElementById('give-chips').innerHTML = '';
+  document.getElementById('receive-chips').innerHTML = '';
+  document.getElementById('give-search').value = '';
+  document.getElementById('receive-search').value = '';
+  document.getElementById('give-results').classList.remove('open');
+  document.getElementById('receive-results').classList.remove('open');
+  document.getElementById('new-player').value = '';
+  document.getElementById('new-year').value = '';
+  document.getElementById('new-set').value = '';
+  document.getElementById('new-value').value = '';
+  document.getElementById('new-ebay-result').textContent = '';
   document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('t-counterpart').value = '';
   document.getElementById('t-notes').value = '';
   document.getElementById('trade-alert').innerHTML = '';
+  switchReceiveTab('collection');
   updateTotals();
   document.getElementById('trade-modal').style.display = 'block';
   document.body.style.overflow = 'hidden';
@@ -143,190 +505,36 @@ function hideNewTrade() {
   document.body.style.overflow = '';
 }
 
-function addGiveCard() {
-  if (!ownedCards.length) { alert('No tienes cartas en tu colección'); return; }
-  const idx = giveCards.length;
-  const options = ownedCards
-    .filter(c => !giveCards.find(g => g && g.card_id === c.id))
-    .map(c => `<option value="${c.id}" data-price="${c.purchase_price || 0}">${c.player}${c.set_name ? ' – '+c.set_name : ''}${c.purchase_price ? ' (${c.purchase_price.toFixed(2)}€)' : ''}</option>`)
-    .join('');
-  const div = document.createElement('div');
-  div.id = `give-${idx}`;
-  div.style = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
-  div.innerHTML = `
-    <select onchange="selectGiveCard(${idx},this)" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px">
-      <option value="">— Selecciona carta —</option>${options}
-    </select>
-    <input type="number" id="give-price-${idx}" placeholder="€" step="0.01" min="0" style="width:80px;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="updateGivePrice(${idx},this.value)">
-    <button type="button" onclick="removeGive(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer;color:#c0392b">×</button>`;
-  document.getElementById('give-cards').appendChild(div);
-  giveCards.push({ card_id: null, value: 0, player: '' });
-}
-
-function selectGiveCard(idx, sel) {
-  const opt = sel.options[sel.selectedIndex];
-  const price = parseFloat(opt.dataset.price) || 0;
-  const card = ownedCards.find(c => c.id === parseInt(sel.value));
-  giveCards[idx] = { card_id: parseInt(sel.value) || null, value: price, player: card ? card.player : '' };
-  document.getElementById(`give-price-${idx}`).value = price.toFixed(2);
-  updateTotals();
-}
-
-function updateGivePrice(idx, val) {
-  if (giveCards[idx]) giveCards[idx].value = parseFloat(val) || 0;
-  updateTotals();
-}
-
-function removeGive(idx) {
-  giveCards[idx] = null;
-  const el = document.getElementById(`give-${idx}`);
-  if (el) el.remove();
-  updateTotals();
-}
-
-function addReceiveExisting() {
-  if (!ownedCards.length) { alert('No tienes cartas en tu colección'); return; }
-  const idx = receiveCards.length;
-  const options = ownedCards.map(c => `<option value="${c.id}" data-price="${c.market_price || c.purchase_price || 0}">${c.player}${c.set_name ? ' – '+c.set_name : ''}</option>`).join('');
-  const div = document.createElement('div');
-  div.id = `receive-${idx}`;
-  div.style = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
-  div.innerHTML = `
-    <select onchange="selectReceiveCard(${idx},this)" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px">
-      <option value="">— Selecciona carta —</option>${options}
-    </select>
-    <input type="number" id="receive-value-${idx}" placeholder="Valor €" step="0.01" min="0" style="width:90px;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="updateReceiveValue(${idx},this.value)">
-    <button type="button" onclick="searchEbay(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer" title="Buscar en eBay">🔍</button>
-    <button type="button" onclick="removeReceive(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer;color:#c0392b">×</button>`;
-  document.getElementById('receive-cards').appendChild(div);
-  receiveCards.push({ card_id: null, value: 0, player: '', is_new: false });
-}
-
-function addReceiveNew() {
-  const idx = receiveCards.length;
-  const div = document.createElement('div');
-  div.id = `receive-${idx}`;
-  div.style = 'background:#f8fff8;border-radius:8px;padding:10px;margin-bottom:8px';
-  div.innerHTML = `
-    <div style="display:flex;gap:6px;margin-bottom:6px">
-      <input type="text" id="receive-player-${idx}" placeholder="Jugador *" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="updateReceiveNew(${idx})">
-      <button type="button" onclick="removeReceive(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer;color:#c0392b">×</button>
-    </div>
-    <div style="display:flex;gap:6px">
-      <input type="text" id="receive-set-${idx}" placeholder="Set / Colección" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px">
-      <input type="number" id="receive-value-${idx}" placeholder="Valor €" step="0.01" min="0" style="width:100px;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="updateReceiveValue(${idx},this.value)">
-      <button type="button" onclick="searchEbayNew(${idx})" style="background:none;border:none;font-size:18px;cursor:pointer" title="Buscar en eBay">🔍</button>
-    </div>
-    <div id="ebay-result-${idx}" style="font-size:12px;color:#27ae60;margin-top:4px"></div>`;
-  document.getElementById('receive-cards').appendChild(div);
-  receiveCards.push({ card_id: null, value: 0, player: '', is_new: true });
-}
-
-function selectReceiveCard(idx, sel) {
-  const opt = sel.options[sel.selectedIndex];
-  const price = parseFloat(opt.dataset.price) || 0;
-  const card = ownedCards.find(c => c.id === parseInt(sel.value));
-  receiveCards[idx] = { card_id: parseInt(sel.value) || null, value: price, player: card ? card.player : '', is_new: false };
-  document.getElementById(`receive-value-${idx}`).value = price.toFixed(2);
-  updateTotals();
-}
-
-function updateReceiveNew(idx) {
-  if (receiveCards[idx]) receiveCards[idx].player = document.getElementById(`receive-player-${idx}`).value;
-}
-
-function updateReceiveValue(idx, val) {
-  if (receiveCards[idx]) receiveCards[idx].value = parseFloat(val) || 0;
-  updateTotals();
-}
-
-function removeReceive(idx) {
-  receiveCards[idx] = null;
-  const el = document.getElementById(`receive-${idx}`);
-  if (el) el.remove();
-  updateTotals();
-}
-
-async function searchEbay(idx) {
-  const card = ownedCards.find(c => c.id === receiveCards[idx]?.card_id);
-  if (!card) { alert('Selecciona una carta primero'); return; }
-  await doEbaySearch(idx, card.player, card.year, card.set_name, card.numbering);
-}
-
-async function searchEbayNew(idx) {
-  const player = document.getElementById(`receive-player-${idx}`)?.value?.trim();
-  const set = document.getElementById(`receive-set-${idx}`)?.value?.trim();
-  if (!player) { alert('Introduce el jugador primero'); return; }
-  await doEbaySearch(idx, player, null, set, null, true);
-}
-
-async function doEbaySearch(idx, player, year, set_name, numbering, isNew=false) {
-  const btn = document.querySelector(`#receive-${idx} button[title="Buscar en eBay"]`);
-  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
-  try {
-    const r = await fetch('/api/ebay-search', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ player, year, set_name, numbering })
-    });
-    const data = await r.json();
-    if (r.ok && data.average) {
-      receiveCards[idx].value = data.average;
-      document.getElementById(`receive-value-${idx}`).value = data.average.toFixed(2);
-      if (isNew) {
-        const el = document.getElementById(`ebay-result-${idx}`);
-        if (el) el.textContent = `✅ eBay: ${data.average.toFixed(2)} € (${data.samples} ventas)`;
-      }
-      updateTotals();
-    } else {
-      alert('No se encontraron resultados en eBay. Introduce el valor manualmente.');
-    }
-  } catch(e) {
-    alert('Error buscando en eBay');
-  }
-  if (btn) { btn.textContent = '🔍'; btn.disabled = false; }
-}
-
-function updateTotals() {
-  const giveTotal = giveCards.filter(Boolean).reduce((s, c) => s + (c.value || 0), 0);
-  const receiveTotal = receiveCards.filter(Boolean).reduce((s, c) => s + (c.value || 0), 0);
-  const profit = receiveTotal - giveTotal;
-  document.getElementById('give-total').textContent = giveTotal.toFixed(2) + ' €';
-  document.getElementById('receive-total').textContent = receiveTotal.toFixed(2) + ' €';
-  const el = document.getElementById('trade-profit');
-  el.textContent = (profit >= 0 ? '+' : '') + profit.toFixed(2) + ' €';
-  el.style.color = profit >= 0 ? '#27ae60' : '#c0392b';
-}
+// ========== GUARDAR ==========
 
 async function saveTrade() {
-  const give = giveCards.filter(Boolean).filter(c => c.card_id);
-  const receive = receiveCards.filter(Boolean);
-  if (!give.length && !receive.length) {
-    document.getElementById('trade-alert').innerHTML = '<div class="alert alert-error">Añade al menos una carta al trade</div>';
-    return;
+  const alertEl = document.getElementById('trade-alert');
+  alertEl.innerHTML = '';
+
+  const give = giveSelected.filter(c => c.card_id);
+
+  let receive = receiveSelected.filter(c => !c.is_new);
+  if (receiveTab === 'new' && newCardReceive.player) {
+    receive.push({
+      player: newCardReceive.player,
+      description: document.getElementById('new-set').value.trim(),
+      value: newCardReceive.value,
+      card_id: null,
+      is_new: true
+    });
   }
 
-  const receivePayload = receive.map(c => {
-    if (c.is_new) {
-      const realIdx = receiveCards.indexOf(c);
-      const playerEl = document.getElementById(`receive-player-${realIdx}`);
-      const setEl = document.getElementById(`receive-set-${realIdx}`);
-      return {
-        player: playerEl ? playerEl.value : c.player,
-        description: setEl ? setEl.value : '',
-        value: c.value,
-        card_id: null
-      };
-    }
-    return c;
-  });
+  if (!give.length && !receive.length) {
+    alertEl.innerHTML = '<div class="alert alert-error">A&#241;ade al menos una carta al trade</div>';
+    return;
+  }
 
   const payload = {
     trade_date: document.getElementById('t-date').value,
     counterpart: document.getElementById('t-counterpart').value.trim() || null,
     notes: document.getElementById('t-notes').value.trim() || null,
     give,
-    receive: receivePayload,
+    receive,
   };
 
   const r = await fetch('/api/trades', {
@@ -335,13 +543,50 @@ async function saveTrade() {
     body: JSON.stringify(payload)
   });
   if (!r.ok) {
-    document.getElementById('trade-alert').innerHTML = '<div class="alert alert-error">Error al guardar el trade</div>';
+    alertEl.innerHTML = '<div class="alert alert-error">Error al guardar el trade</div>';
     return;
   }
   hideNewTrade();
   loadTrades();
   const r2 = await fetch('/api/cards?status=owned');
   ownedCards = await r2.json();
+}
+
+// ========== LISTA DE TRADES ==========
+
+async function loadTrades() {
+  const r = await fetch('/api/trades');
+  const trades = await r.json();
+  const container = document.getElementById('trades-list');
+  if (!trades.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#8644;</div><p>A&#250;n no tienes trades.<br>Pulsa + para registrar uno.</p></div>';
+    return;
+  }
+  container.innerHTML = trades.map(t => {
+    const profit = (t.receive_value || 0) - (t.give_value || 0);
+    const cls = profit >= 0 ? 'roi-positive' : 'roi-negative';
+    const giveList = t.cards.filter(c => c.direction === 'give');
+    const receiveList = t.cards.filter(c => c.direction === 'receive');
+    return `<div class="card-item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;color:#888">${t.trade_date || 'Sin fecha'}${t.counterpart ? ' &#183; con ' + t.counterpart : ''}</div>
+        <div class="${cls}" style="font-size:17px;font-weight:700">${profit >= 0 ? '+' : ''}${profit.toFixed(2)} &#8364;</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#f87171;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px">Entrego</div>
+          ${giveList.map(c => `<div style="font-size:13px;margin-bottom:3px">${c.player || c.description || '&#8212;'} <span style="color:#888;font-size:12px">${c.value ? c.value.toFixed(2)+'&#8364;' : ''}</span></div>`).join('')}
+          <div style="font-size:12px;color:#f87171;margin-top:4px;font-weight:600">${(t.give_value||0).toFixed(2)} &#8364;</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#4ade80;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px">Recibo</div>
+          ${receiveList.map(c => `<div style="font-size:13px;margin-bottom:3px">${c.player || c.description || '&#8212;'} <span style="color:#888;font-size:12px">${c.value ? c.value.toFixed(2)+'&#8364;' : ''}</span></div>`).join('')}
+          <div style="font-size:12px;color:#4ade80;margin-top:4px;font-weight:600">${(t.receive_value||0).toFixed(2)} &#8364;</div>
+        </div>
+      </div>
+      ${t.notes ? `<div style="font-size:12px;color:#666;margin-top:10px;padding-top:10px;border-top:1px solid #222">${t.notes}</div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 init();
