@@ -13,51 +13,70 @@
 <body>
 
 <div class="nav">
-  <a href="/logout" class="nav-logo" title="Cerrar sesión">JC</a>
-  <h1>SPORT CARDS</h1>
-  <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar Excel">📊</a>
+  <div class="nav-brand">
+    <div class="nav-logo-icon">SC</div>
+    <span class="nav-title">SportCards</span>
+  </div>
+  <div class="nav-actions">
+    <a href="/api/export" class="nav-action-btn" title="Exportar Excel">&#128202;</a>
+    <a href="/logout" class="nav-avatar" title="Cerrar sesi&#243;n">JC</a>
+  </div>
 </div>
 
 <div class="container">
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-    <a href="/collection" style="text-decoration:none;background:#dce8ff;border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;color:#1a4fa0">
-      <span style="font-size:28px">📚</span>
-      <span style="font-size:13px;font-weight:600">Colección</span>
+  <div class="value-card" id="value-card">
+    <div class="value-card-label">Valor de tu colecci&#243;n</div>
+    <div class="value-card-amount" id="total-value">&#8212;</div>
+    <div class="value-card-sub" id="value-sub">Cargando...</div>
+  </div>
+
+  <div class="home-grid">
+    <a href="/collection" class="home-btn home-btn-dark" id="btn-collection">
+      <span class="home-btn-icon">&#128218;</span>
+      <span class="home-btn-label">Colecci&#243;n</span>
+      <span class="home-btn-sub" id="lbl-collection">&#8212; cartas</span>
     </a>
-    <a href="/add" style="text-decoration:none;background:var(--red);border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;color:white">
-      <span style="font-size:28px">➕</span>
-      <span style="font-size:13px;font-weight:600">Añadir carta</span>
+    <a href="/add" class="home-btn home-btn-gold">
+      <span class="home-btn-icon">&#43;</span>
+      <span class="home-btn-label">A&#241;adir carta</span>
+      <span class="home-btn-sub">Foto o manual</span>
     </a>
-    <a href="/trades" style="text-decoration:none;background:#dce8ff;border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;color:#1a4fa0">
-      <span style="font-size:28px">🔄</span>
-      <span style="font-size:13px;font-weight:600">Trades</span>
+    <a href="/trades" class="home-btn home-btn-dark" id="btn-trades">
+      <span class="home-btn-icon">&#8644;</span>
+      <span class="home-btn-label">Trades</span>
+      <span class="home-btn-sub" id="lbl-trades">&#8212;</span>
     </a>
-    <a href="/stats" style="text-decoration:none;background:#dce8ff;border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;color:#1a4fa0">
-      <span style="font-size:28px">📈</span>
-      <span style="font-size:13px;font-weight:600">Estadísticas</span>
+    <a href="/stats" class="home-btn home-btn-dark">
+      <span class="home-btn-icon">&#128200;</span>
+      <span class="home-btn-label">Estad&#237;sticas</span>
+      <span class="home-btn-sub">Ver an&#225;lisis</span>
     </a>
   </div>
 
-  <div id="alerts-section" style="margin-bottom:16px"></div>
+  <div id="alerts-section" style="margin-bottom:14px"></div>
 
-  <h2 style="margin-bottom:12px;font-size:16px;color:#666">Últimas añadidas</h2>
+  <div class="section-header">
+    <span class="section-title">&#218;ltimas a&#241;adidas</span>
+    <a href="/collection" class="section-link">Ver todo</a>
+  </div>
   <div id="recent-cards"></div>
-  <a href="/collection" class="btn btn-secondary" style="margin-top:8px">Ver colección completa →</a>
 
   <div id="other-users-section" style="display:none;margin-top:24px">
-    <h2 style="margin-bottom:12px;font-size:16px;color:#666">👥 Colecciones de otros usuarios</h2>
+    <div class="section-header">
+      <span class="section-title">Colecciones de otros usuarios</span>
+    </div>
     <div id="other-users-list"></div>
   </div>
 
 </div>
 
 <nav class="bottom-nav">
-  <a href="/" class="active"><span>🏠</span><span>Inicio</span></a>
-  <a href="/collection"><span>📚</span><span>Colección</span></a>
-  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
-  <a href="/trades"><span>🔄</span><span>Trades</span></a>
-  <a href="/stats"><span>📈</span><span>Stats</span></a>
+  <a href="/" class="active"><span>&#127968;</span><span>Inicio</span></a>
+  <a href="/collection"><span>&#128218;</span><span>Colecci&#243;n</span></a>
+  <a href="/add" class="add-btn"><span>&#43;</span><span>A&#241;adir</span></a>
+  <a href="/trades"><span>&#8644;</span><span>Trades</span></a>
+  <a href="/stats"><span>&#128200;</span><span>Stats</span></a>
 </nav>
 
 <script>
@@ -66,8 +85,15 @@ async function loadRecent() {
   const cards = await r.json();
   const container = document.getElementById('recent-cards');
   const recent = cards.slice(0, 5);
+
+  document.getElementById('lbl-collection').textContent = cards.length + ' cartas';
+
+  const totalVal = cards.reduce((s, c) => s + (c.purchase_price || 0), 0);
+  document.getElementById('total-value').textContent = totalVal.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' &#8364;';
+  document.getElementById('value-sub').textContent = cards.length + ' cartas en colecci&#243;n';
+
   if (!recent.length) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">🃏</div><p>Aún no tienes cartas.<br>Añade tu primera carta.</p><a href="/add" class="btn btn-primary" style="max-width:240px;margin:0 auto">Añadir primera carta</a></div>';
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#127183;</div><p>A&#250;n no tienes cartas.<br>A&#241;ade tu primera carta.</p><a href="/add" class="btn btn-primary" style="max-width:240px;margin:0 auto">A&#241;adir primera carta</a></div>';
     return;
   }
   container.innerHTML = recent.map(cardHTML).join('');
@@ -76,21 +102,21 @@ async function loadRecent() {
 function cardHTML(c) {
   const thumb = c.photo_front
     ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">`
-    : `<div class="card-thumb-placeholder">🃏</div>`;
+    : `<div class="card-thumb-placeholder">&#127183;</div>`;
   const badges = [
     c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
     c.numbering ? `<span class="badge badge-numbered">/${c.numbering}</span>` : '',
   ].filter(Boolean).join(' ');
-  const price = c.purchase_price ? `${c.purchase_price.toFixed(2)} €` : '—';
+  const price = c.purchase_price ? c.purchase_price.toFixed(2) + ' &#8364;' : '&#8212;';
   return `<a href="/card/${c.id}" class="card-item">
     ${thumb}
     <div class="card-info">
       <div class="card-player">${c.player}</div>
-      <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' · ')}</div>
+      <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' &#183; ')}</div>
       ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
       <div class="card-price">Compra: ${price}</div>
     </div>
-    <span style="color:#ccc;font-size:20px">›</span>
+    <span class="card-chevron">&#8250;</span>
   </a>`;
 }
 
@@ -100,9 +126,10 @@ async function loadOtherUsers() {
   if (!users.length) return;
   document.getElementById('other-users-section').style.display = '';
   document.getElementById('other-users-list').innerHTML = users.map(u =>
-    `<a href="/user/${u.username}" class="btn btn-secondary" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;justify-content:space-between">
-      <span>📚 Colección de <strong>${u.username}</strong></span>
-      <span style="color:#ccc">›</span>
+    `<a href="/user/${u.username}" class="card-item" style="text-decoration:none">
+      <span style="font-size:22px">&#128218;</span>
+      <div class="card-info"><div class="card-player">${u.username}</div><div class="card-meta">Ver colecci&#243;n</div></div>
+      <span class="card-chevron">&#8250;</span>
     </a>`
   ).join('');
 }
@@ -114,22 +141,32 @@ async function loadAlerts() {
   const alerts = [];
   if (data.old_cards_count > 0) {
     const names = data.old_cards.slice(0, 3).map(c => c.player).join(', ');
-    const extra = data.old_cards_count > 3 ? ` y ${data.old_cards_count - 3} más` : '';
-    alerts.push(`<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
-      <span style="font-size:20px">⚠️</span>
+    const extra = data.old_cards_count > 3 ? ` y ${data.old_cards_count - 3} m&#225;s` : '';
+    alerts.push(`<div class="alert-banner">
+      <span class="alert-icon">&#9888;&#65039;</span>
       <div>
-        <strong>Tienes ${data.old_cards_count} carta${data.old_cards_count>1?'s':''} con más de 6 meses en tu colección</strong>
-        <div style="font-size:13px;color:#666;margin-top:4px">${names}${extra}</div>
-        <a href="/collection" style="font-size:13px;color:#856404;font-weight:600">Ver colección →</a>
+        <strong>${data.old_cards_count} carta${data.old_cards_count>1?'s':''} con m&#225;s de 6 meses</strong>
+        <div style="font-size:12px;color:#999;margin-top:2px">${names}${extra}</div>
+        <a href="/collection" class="alert-link">Ver colecci&#243;n &#8594;</a>
       </div>
     </div>`);
   }
   sec.innerHTML = alerts.join('');
 }
 
+async function loadTrades() {
+  try {
+    const r = await fetch('/api/trades');
+    const trades = await r.json();
+    const active = trades.filter(t => t.status === 'active').length;
+    document.getElementById('lbl-trades').textContent = active ? active + ' activos' : 'Sin activos';
+  } catch(e) {}
+}
+
 loadRecent();
 loadOtherUsers();
 loadAlerts();
+loadTrades();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
