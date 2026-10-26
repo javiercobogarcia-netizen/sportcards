@@ -5,46 +5,68 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111111">
-<title>Carta — SportCards</title>
+<title>Carta ‚Äî SportCards</title>
 <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
 
 <div class="nav">
-  <a href="/collection" class="nav-back">‹</a>
+  <a href="/collection" class="nav-back">‚Äπ</a>
   <h1 id="nav-title">Carta</h1>
-  <button onclick="toggleEdit()" id="btn-edit" style="background:none;border:none;color:white;font-size:22px;cursor:pointer" title="Editar">✏️</button>
+  <button onclick="toggleEdit()" id="btn-edit" style="background:none;border:none;color:white;font-size:22px;cursor:pointer" title="Editar">‚úèÔ∏è</button>
 </div>
 
-<!-- MODAL EDICIÓN -->
+<!-- MODAL EDITAR VENTA -->
+<div id="edit-sale-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;overflow-y:auto;padding:16px">
+  <div style="background:white;border-radius:16px;padding:20px;max-width:400px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:18px;color:var(--red)">‚úèÔ∏è Editar venta</h2>
+      <button onclick="toggleEditSale()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666">√ó</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Precio de venta (‚Ç¨)</label>
+        <input type="number" id="es-price" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Fecha de venta</label>
+        <input type="date" id="es-date">
+      </div>
+    </div>
+    <div id="edit-sale-alert"></div>
+    <button class="btn btn-primary" onclick="saveEditSale()">üíæ Guardar venta</button>
+  </div>
+</div>
+
+<!-- MODAL EDICI√ìN -->
 <div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;overflow-y:auto;padding:16px">
   <div style="background:white;border-radius:16px;padding:20px;max-width:560px;margin:0 auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="font-size:18px;color:var(--red)">✏️ Editar carta</h2>
-      <button onclick="toggleEdit()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666">×</button>
+      <h2 style="font-size:18px;color:var(--red)">‚úèÔ∏è Editar carta</h2>
+      <button onclick="toggleEdit()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666">√ó</button>
     </div>
 
     <div class="form-group"><label>Jugador *</label><input type="text" id="e-player"></div>
     <div class="form-row">
       <div class="form-group"><label>Deporte</label>
         <select id="e-sport">
-          <option value="">—</option>
-          <option>fútbol</option><option>baloncesto</option><option>béisbol</option>
-          <option>fútbol americano</option><option>hockey</option><option>golf</option><option>otro</option>
+          <option value="">‚Äî</option>
+          <option>f√∫tbol</option><option>baloncesto</option><option>b√©isbol</option>
+          <option>f√∫tbol americano</option><option>hockey</option><option>golf</option><option>otro</option>
         </select>
       </div>
       <div class="form-group"><label>Equipo</label><input type="text" id="e-team"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Año</label><input type="number" id="e-year"></div>
-      <div class="form-group"><label>Nº carta</label><input type="text" id="e-card-number"></div>
+      <div class="form-group"><label>A√±o</label><input type="number" id="e-year"></div>
+      <div class="form-group"><label>N¬∫ carta</label><input type="text" id="e-card-number"></div>
     </div>
-    <div class="form-group"><label>Set / Colección</label><input type="text" id="e-set"></div>
+    <div class="form-group"><label>Set / Colecci√≥n</label><input type="text" id="e-set"></div>
     <div class="form-group"><label>Variante</label><input type="text" id="e-variant"></div>
-    <div class="form-group"><label>Numeración (solo el número, ej: 25)</label><input type="text" id="e-numbering" placeholder="25"></div>
-    <div class="form-group"><label>¿Gradada?</label>
+    <div class="form-group"><label>Numeraci√≥n (solo el n√∫mero, ej: 25)</label><input type="text" id="e-numbering" placeholder="25"></div>
+    <div class="form-group"><label>¬øGradada?</label>
       <select id="e-graded" onchange="document.getElementById('e-grade-fields').style.display=this.value==='1'?'block':'none'">
-        <option value="0">No</option><option value="1">Sí</option>
+        <option value="0">No</option><option value="1">S√≠</option>
       </select>
     </div>
     <div id="e-grade-fields" style="display:none">
@@ -56,13 +78,13 @@
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Precio compra (€)</label><input type="number" id="e-price" step="0.01" min="0"></div>
+      <div class="form-group"><label>Precio compra (‚Ç¨)</label><input type="number" id="e-price" step="0.01" min="0"></div>
       <div class="form-group"><label>Fecha compra</label><input type="date" id="e-date"></div>
     </div>
     <div class="form-group"><label>Notas</label><textarea id="e-notes" rows="2"></textarea></div>
 
     <div style="border-top:1px solid #eee;margin:16px 0;padding-top:16px">
-      <p style="font-size:13px;font-weight:600;margin-bottom:10px">📸 Cambiar fotos (opcional)</p>
+      <p style="font-size:13px;font-weight:600;margin-bottom:10px">üì∏ Cambiar fotos (opcional)</p>
       <input type="file" id="e-inp-front" accept="image/*" style="display:none" onchange="previewEditPhoto(this,'front')">
       <input type="file" id="e-inp-back" accept="image/*" style="display:none" onchange="previewEditPhoto(this,'back')">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -70,13 +92,13 @@
           <div id="e-prev-front" style="min-height:80px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;overflow:hidden">
             <span style="font-size:12px;color:#999">Sin cambios</span>
           </div>
-          <button type="button" onclick="document.getElementById('e-inp-front').click()" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer">📷 Delantera</button>
+          <button type="button" onclick="document.getElementById('e-inp-front').click()" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer">üì∑ Delantera</button>
         </div>
         <div style="text-align:center">
           <div id="e-prev-back" style="min-height:80px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;overflow:hidden">
             <span style="font-size:12px;color:#999">Sin cambios</span>
           </div>
-          <button type="button" onclick="document.getElementById('e-inp-back').click()" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer">📷 Trasera</button>
+          <button type="button" onclick="document.getElementById('e-inp-back').click()" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer">üì∑ Trasera</button>
         </div>
       </div>
     </div>
@@ -84,12 +106,12 @@
     <div style="margin:12px 0">
       <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer">
         <input type="checkbox" id="e-personal" style="width:18px;height:18px;accent-color:var(--red)">
-        Colección personal (excluir de avisos de antigüedad)
+        Colecci√≥n personal (excluir de avisos de antig√ºedad)
       </label>
     </div>
 
     <div id="edit-alert"></div>
-    <button class="btn btn-primary" onclick="saveEdit()">💾 Guardar cambios</button>
+    <button class="btn btn-primary" onclick="saveEdit()">üíæ Guardar cambios</button>
   </div>
 </div>
 
@@ -98,11 +120,9 @@
 </div>
 
 <nav class="bottom-nav">
-  <a href="/"><span>🏠</span><span>Inicio</span></a>
-  <a href="/collection"><span>📚</span><span>Colección</span></a>
-  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
-  <a href="/trades"><span>🔄</span><span>Trades</span></a>
-  <a href="/stats"><span>📈</span><span>Stats</span></a>
+  <a href="/"><span>üè†</span><span>Inicio</span></a>
+  <a href="/collection"><span>üìö</span><span>Colecci√≥n</span></a>
+  <a href="/add" class="add-btn"><span>‚ûï</span><span>A√±adir</span></a>
 </nav>
 
 <script>
@@ -136,38 +156,38 @@ function render() {
     const profit = sale - purchase;
     const roi = purchase ? ((profit / purchase) * 100).toFixed(1) : 0;
     financialHtml = `
-      <div class="detail-row"><span class="detail-label">Precio compra</span><span class="detail-value">${purchase.toFixed(2)} €</span></div>
-      <div class="detail-row"><span class="detail-label">Precio venta</span><span class="detail-value">${sale.toFixed(2)} €</span></div>
-      <div class="detail-row"><span class="detail-label">Fecha venta</span><span class="detail-value">${c.sale_date || '—'}</span></div>
-      <div class="detail-row"><span class="detail-label">Beneficio</span><span class="detail-value ${profit>=0?'roi-positive':'roi-negative'}">${profit>=0?'+':''}${profit.toFixed(2)} €</span></div>
+      <div class="detail-row"><span class="detail-label">Precio compra</span><span class="detail-value">${purchase.toFixed(2)} ‚Ç¨</span></div>
+      <div class="detail-row"><span class="detail-label">Precio venta</span><span class="detail-value">${sale.toFixed(2)} ‚Ç¨</span></div>
+      <div class="detail-row"><span class="detail-label">Fecha venta</span><span class="detail-value">${c.sale_date || '‚Äî'}</span></div>
+      <div class="detail-row"><span class="detail-label">Beneficio</span><span class="detail-value ${profit>=0?'roi-positive':'roi-negative'}">${profit>=0?'+':''}${profit.toFixed(2)} ‚Ç¨</span></div>
       <div class="detail-row"><span class="detail-label">ROI</span><span class="detail-value ${profit>=0?'roi-positive':'roi-negative'}">${profit>=0?'+':''}${roi}%</span></div>`;
   } else {
     const latent = market ? market - purchase : null;
     financialHtml = `
-      <div class="detail-row"><span class="detail-label">Precio compra</span><span class="detail-value">${purchase.toFixed(2)} €</span></div>
-      <div class="detail-row"><span class="detail-label">Fecha compra</span><span class="detail-value">${c.purchase_date || '—'}</span></div>
-      <div class="detail-row"><span class="detail-label">Precio de mercado</span><span class="detail-value">${market ? market.toFixed(2)+' €' : '—'}</span></div>
-      ${market ? `<div class="detail-row"><span class="detail-label">Beneficio latente</span><span class="detail-value ${latent>=0?'roi-positive':'roi-negative'}">${latent>=0?'+':''}${latent.toFixed(2)} € (${((latent/purchase)*100).toFixed(1)}%)</span></div>` : ''}
+      <div class="detail-row"><span class="detail-label">Precio compra</span><span class="detail-value">${purchase.toFixed(2)} ‚Ç¨</span></div>
+      <div class="detail-row"><span class="detail-label">Fecha compra</span><span class="detail-value">${c.purchase_date || '‚Äî'}</span></div>
+      <div class="detail-row"><span class="detail-label">Precio de mercado</span><span class="detail-value">${market ? market.toFixed(2)+' ‚Ç¨' : '‚Äî'}</span></div>
+      ${market ? `<div class="detail-row"><span class="detail-label">Beneficio latente</span><span class="detail-value ${latent>=0?'roi-positive':'roi-negative'}">${latent>=0?'+':''}${latent.toFixed(2)} ‚Ç¨ (${((latent/purchase)*100).toFixed(1)}%)</span></div>` : ''}
       ${c.market_price_updated ? `<div class="detail-row"><span class="detail-label">Precio actualizado</span><span class="detail-value" style="font-size:12px;color:#999">${c.market_price_updated}</span></div>` : ''}`;
   }
 
   const qrHtml = c.qr_code ? `
     <div class="detail-section">
-      <h2>📱 Código QR</h2>
+      <h2>üì± C√≥digo QR</h2>
       <div class="qr-container">
         <img src="/${c.qr_code}" alt="QR">
         <p style="font-size:12px;color:#999;margin-top:8px">Escanea para ver esta carta</p>
-        <a href="/${c.qr_code}" download class="btn btn-secondary btn-sm" style="margin-top:12px;display:inline-block">⬇️ Descargar QR</a>
+        <a href="/${c.qr_code}" download class="btn btn-secondary btn-sm" style="margin-top:12px;display:inline-block">‚¨áÔ∏è Descargar QR</a>
       </div>
     </div>` : '';
 
   const sellHtml = c.status === 'owned' ? `
     <div class="detail-section" id="sell-section">
-      <h2>💸 Vender carta</h2>
+      <h2>üí∏ Vender carta</h2>
       <div id="sell-alert"></div>
       <div class="form-row">
         <div class="form-group">
-          <label>Precio de venta (€)</label>
+          <label>Precio de venta (‚Ç¨)</label>
           <input type="number" id="sell-price" placeholder="0.00" min="0" step="0.01">
         </div>
         <div class="form-group">
@@ -175,46 +195,59 @@ function render() {
           <input type="date" id="sell-date" value="${new Date().toISOString().split('T')[0]}">
         </div>
       </div>
-      <button class="btn btn-success" onclick="sellCard()">✅ Registrar venta</button>
-    </div>` : '';
+      <button class="btn btn-success" onclick="sellCard()">‚úÖ Registrar venta</button>
+    </div>` : `
+    <div class="detail-section">
+      <h2>üîß Acciones de venta</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="toggleEditSale()">‚úèÔ∏è Editar precio/fecha venta</button>
+        <button class="btn" style="background:#fff3cd;color:#856404;border:1px solid #ffc107" onclick="unsellCard()">‚Ü©Ô∏è Desmarcar como vendida</button>
+      </div>
+    </div>`;
+
+  const deleteHtml = `
+    <div class="detail-section" style="margin-top:8px">
+      <button class="btn" style="background:#ffebee;color:#c62828;border:1px solid #ef9a9a;width:100%" onclick="deleteCard()">üóëÔ∏è Borrar carta permanentemente</button>
+    </div>`;
 
   document.getElementById('content').innerHTML = `
     ${photosHtml}
 
     <div class="detail-section">
-      <h2>👤 Jugador</h2>
+      <h2>üë§ Jugador</h2>
       <div class="detail-row"><span class="detail-label">Nombre</span><span class="detail-value">${c.player}</span></div>
       ${c.sport ? `<div class="detail-row"><span class="detail-label">Deporte</span><span class="detail-value capitalize">${c.sport}</span></div>` : ''}
       ${c.team ? `<div class="detail-row"><span class="detail-label">Equipo</span><span class="detail-value">${c.team}</span></div>` : ''}
     </div>
 
     <div class="detail-section">
-      <h2>🃏 Carta</h2>
-      ${c.year ? `<div class="detail-row"><span class="detail-label">Año</span><span class="detail-value">${c.year}</span></div>` : ''}
-      ${c.set_name ? `<div class="detail-row"><span class="detail-label">Colección</span><span class="detail-value">${c.set_name}</span></div>` : ''}
+      <h2>üÉè Carta</h2>
+      ${c.year ? `<div class="detail-row"><span class="detail-label">A√±o</span><span class="detail-value">${c.year}</span></div>` : ''}
+      ${c.set_name ? `<div class="detail-row"><span class="detail-label">Colecci√≥n</span><span class="detail-value">${c.set_name}</span></div>` : ''}
       ${c.variant ? `<div class="detail-row"><span class="detail-label">Variante</span><span class="detail-value">${c.variant}</span></div>` : ''}
-      ${c.card_number ? `<div class="detail-row"><span class="detail-label">Nº carta</span><span class="detail-value">${c.card_number}</span></div>` : ''}
-      ${c.numbering ? `<div class="detail-row"><span class="detail-label">Numeración</span><span class="detail-value">/${String(c.numbering).replace(/^\/+/,'')}</span></div>` : ''}
+      ${c.card_number ? `<div class="detail-row"><span class="detail-label">N¬∫ carta</span><span class="detail-value">${c.card_number}</span></div>` : ''}
+      ${c.numbering ? `<div class="detail-row"><span class="detail-label">Numeraci√≥n</span><span class="detail-value">/${String(c.numbering).replace(/^\/+/,'')}</span></div>` : ''}
       ${c.graded ? `<div class="detail-row"><span class="detail-label">Gradeo</span><span class="detail-value"><span class="badge badge-graded">${c.grading_company} ${c.grade}</span></span></div>` : ''}
     </div>
 
     <div class="detail-section">
-      <h2>💶 Dinero</h2>
+      <h2>üí∂ Dinero</h2>
       ${financialHtml}
     </div>
 
     ${c.status === 'owned' ? `
     <div class="detail-section">
-      <h2>📈 Precio de mercado</h2>
+      <h2>üìà Precio de mercado</h2>
       <p style="font-size:13px;color:#666;margin-bottom:12px">Busca el precio actual en eBay para esta carta.</p>
       <div id="market-alert"></div>
-      <button class="btn btn-secondary" id="btn-market" onclick="fetchMarket()">🔍 Actualizar precio eBay</button>
+      <button class="btn btn-secondary" id="btn-market" onclick="fetchMarket()">üîç Actualizar precio eBay</button>
     </div>` : ''}
 
     ${qrHtml}
     ${sellHtml}
 
-    ${c.notes ? `<div class="detail-section"><h2>📝 Notas</h2><p style="font-size:14px">${c.notes}</p></div>` : ''}
+    ${c.notes ? `<div class="detail-section"><h2>üìù Notas</h2><p style="font-size:14px">${c.notes}</p></div>` : ''}
+    ${deleteHtml}
   `;
 }
 
@@ -225,12 +258,12 @@ async function fetchMarket() {
   const r = await fetch(`/api/card/${CARD_ID}/market-price`, {method:'POST'});
   const data = await r.json();
   btn.disabled = false;
-  btn.textContent = '🔍 Actualizar precio eBay';
+  btn.textContent = 'üîç Actualizar precio eBay';
   if (!r.ok) {
-    document.getElementById('market-alert').innerHTML = `<div class="alert alert-error">⚠️ ${data.error}</div>`;
+    document.getElementById('market-alert').innerHTML = `<div class="alert alert-error">‚ö†Ô∏è ${data.error}</div>`;
     return;
   }
-  document.getElementById('market-alert').innerHTML = `<div class="alert alert-success">✅ Precio medio: ${data.average} € (${data.samples} resultados en eBay) · "${data.query}"</div>`;
+  document.getElementById('market-alert').innerHTML = `<div class="alert alert-success">‚úÖ Precio medio: ${data.average} ‚Ç¨ (${data.samples} resultados en eBay) ¬∑ "${data.query}"</div>`;
   card.market_price = data.average;
   card.market_price_updated = data.updated;
   render();
@@ -247,7 +280,7 @@ async function sellCard() {
   });
   const data = await r.json();
   if (!r.ok) { document.getElementById('sell-alert').innerHTML = `<div class="alert alert-error">${data.error}</div>`; return; }
-  const msg = `✅ Vendida. Beneficio: ${data.profit >= 0 ? '+' : ''}${data.profit.toFixed(2)} € (ROI: ${data.roi}%)`;
+  const msg = `‚úÖ Vendida. Beneficio: ${data.profit >= 0 ? '+' : ''}${data.profit.toFixed(2)} ‚Ç¨ (ROI: ${data.roi}%)`;
   alert(msg);
   window.location.reload();
 }
@@ -354,6 +387,48 @@ async function saveEdit() {
   }
 
   toggleEdit(); await load();
+}
+
+async function unsellCard() {
+  if (!confirm('¬øDesmarcar esta carta como vendida? Se borrar√°n el precio y fecha de venta.')) return;
+  const r = await fetch(`/api/card/${CARD_ID}/unsell`, {method:'POST'});
+  if (!r.ok) { alert('Error al desmarcar la venta'); return; }
+  window.location.reload();
+}
+
+async function deleteCard() {
+  if (!confirm('¬øBorrar esta carta permanentemente? Esta acci√≥n no se puede deshacer.')) return;
+  if (!confirm('¬øSeguro? Se perder√°n todos los datos de esta carta.')) return;
+  const r = await fetch(`/api/card/${CARD_ID}`, {method:'DELETE'});
+  if (!r.ok) { alert('Error al borrar la carta'); return; }
+  window.location.href = '/collection';
+}
+
+function toggleEditSale() {
+  const modal = document.getElementById('edit-sale-modal');
+  if (modal.style.display === 'none') {
+    document.getElementById('es-price').value = card.sale_price || '';
+    document.getElementById('es-date').value = card.sale_date || '';
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  } else {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+}
+
+async function saveEditSale() {
+  const price = document.getElementById('es-price').value;
+  const date = document.getElementById('es-date').value;
+  if (!price) { document.getElementById('edit-sale-alert').innerHTML = '<div class="alert alert-error">Introduce el precio de venta</div>'; return; }
+  const r = await fetch(`/api/card/${CARD_ID}`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({sale_price: parseFloat(price), sale_date: date})
+  });
+  if (!r.ok) { document.getElementById('edit-sale-alert').innerHTML = '<div class="alert alert-error">Error al guardar</div>'; return; }
+  toggleEditSale();
+  await load();
 }
 
 load();
