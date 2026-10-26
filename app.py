@@ -77,10 +77,10 @@ def do_login():
     username = data.get('username', '').strip()
     password = data.get('password', '')
     if not username or not password:
-        return jsonify({'error': 'Usuario y contraseña requeridos'}), 400
+        return jsonify({'error': 'Usuario y contrase√±a requeridos'}), 400
     user = verify_user(username, password)
     if not user:
-        return jsonify({'error': 'Usuario o contraseña incorrectos'}), 401
+        return jsonify({'error': 'Usuario o contrase√±a incorrectos'}), 401
     session.permanent = True
     session['user_id'] = user['id']
     session['username'] = user['username']
@@ -92,9 +92,9 @@ def do_register():
     username = data.get('username', '').strip()
     password = data.get('password', '')
     if not username or not password:
-        return jsonify({'error': 'Usuario y contraseña requeridos'}), 400
+        return jsonify({'error': 'Usuario y contrase√±a requeridos'}), 400
     if len(password) < 4:
-        return jsonify({'error': 'La contraseña debe tener al menos 4 caracteres'}), 400
+        return jsonify({'error': 'La contrase√±a debe tener al menos 4 caracteres'}), 400
     user_id, error = create_user(username, password)
     if error:
         return jsonify({'error': error}), 400
@@ -356,6 +356,25 @@ def api_sell_card(card_id):
     profit = round(float(sale_price) - purchase, 2)
     roi = round((profit / purchase) * 100, 1) if purchase else 0
     return jsonify({'profit': profit, 'roi': roi})
+
+@app.route('/api/card/<int:card_id>/unsell', methods=['POST'])
+@login_required
+def api_unsell_card(card_id):
+    card = get_card(card_id, user_id=current_user_id())
+    if not card:
+        return jsonify({'error': 'No autorizado'}), 403
+    update_card(card_id, {'status': 'owned', 'sale_price': None, 'sale_date': None})
+    return jsonify({'ok': True})
+
+@app.route('/api/card/<int:card_id>', methods=['DELETE'])
+@login_required
+def api_delete_card(card_id):
+    card = get_card(card_id, user_id=current_user_id())
+    if not card:
+        return jsonify({'error': 'No autorizado'}), 403
+    from database import delete_card
+    delete_card(card_id)
+    return jsonify({'ok': True})
 
 @app.route('/api/card/<int:card_id>/market-price', methods=['POST'])
 @login_required
