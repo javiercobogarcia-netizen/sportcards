@@ -274,6 +274,14 @@ def update_card(card_id, data):
     conn.commit()
     conn.close()
 
+def delete_card(card_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('DELETE FROM price_history WHERE card_id = ?', (card_id,))
+    c.execute('DELETE FROM cards WHERE id = ?', (card_id,))
+    conn.commit()
+    conn.close()
+
 def add_price_history(card_id, price, source):
     conn = get_db()
     c = conn.cursor()
