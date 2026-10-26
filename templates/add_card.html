@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111111">
-<title>Añadir carta — SportCards</title>
+<title>A&#241;adir carta &#8212; SportCards</title>
 <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
 
 <div class="nav">
-  <a href="/" class="nav-back">‹</a>
+  <a href="/" class="nav-back">&#8249;</a>
   <h1>Nueva carta</h1>
 </div>
 
@@ -20,28 +20,28 @@
   <!-- PASO 1: FOTOS -->
   <div id="step-photos">
     <div class="form-section">
-      <h2>📸 Foto de la carta</h2>
-      <p style="font-size:13px;color:#666;margin-bottom:14px">Haz fotos de la parte delantera y trasera para identificar la carta automáticamente.</p>
+      <h2>&#128248; Foto de la carta</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:14px">Haz fotos de la parte delantera y trasera para identificar la carta autom&#225;ticamente.</p>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
         <div>
           <label class="photo-area" id="area-front" for="inp-front">
             <input type="file" id="inp-front" accept="image/*" onchange="previewPhoto(this,'front')" style="display:none">
-            <div class="photo-icon">📷</div>
+            <div class="photo-icon">&#128247;</div>
             <div class="photo-label">Delantera</div>
           </label>
         </div>
         <div>
           <label class="photo-area" id="area-back" for="inp-back">
             <input type="file" id="inp-back" accept="image/*" onchange="previewPhoto(this,'back')" style="display:none">
-            <div class="photo-icon">📷</div>
+            <div class="photo-icon">&#128247;</div>
             <div class="photo-label">Trasera</div>
           </label>
         </div>
       </div>
 
       <div id="alert-photos"></div>
-      <button class="btn btn-primary" id="btn-identify" onclick="identify()" disabled>🔍 Identificar carta</button>
+      <button class="btn btn-primary" id="btn-identify" onclick="identify()" disabled>&#128269; Identificar carta</button>
       <p style="font-size:12px;color:#999;text-align:center;margin-top:8px">O rellena los datos manualmente abajo</p>
       <button class="btn btn-secondary" style="margin-top:8px" onclick="showForm(null)">Rellenar manualmente</button>
     </div>
@@ -52,7 +52,7 @@
     <div class="loading">
       <div class="spinner"></div>
       <p>Identificando carta con IA...</p>
-      <p style="font-size:13px;color:#999">Analizando jugador, colección, numeración...</p>
+      <p style="font-size:13px;color:#999">Analizando jugador, colecci&#243;n, numeraci&#243;n...</p>
     </div>
   </div>
 
@@ -60,14 +60,23 @@
   <div id="step-form" style="display:none">
 
     <div id="identify-info" class="identify-result" style="display:none">
-      <h3>✅ Carta identificada automáticamente. Revisa y corrige si es necesario.</h3>
+      <h3>&#9989; Carta identificada autom&#225;ticamente. Revisa y corrige si es necesario.</h3>
     </div>
     <div id="ebay-info" style="display:none;background:#e8f5e9;border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px">
-      💰 <strong>Precio de mercado (eBay):</strong> <span id="ebay-price"></span>
+      &#128176; <strong>Precio de mercado (eBay):</strong> <span id="ebay-price"></span>
+    </div>
+
+    <!-- &#218;LTIMAS VENTAS EBAY -->
+    <div id="ebay-sales-section" style="display:none;margin-bottom:12px">
+      <div class="form-section" style="margin-bottom:0">
+        <h2>&#128722; &#218;ltimas ventas en eBay</h2>
+        <div id="ebay-sales-loading" style="font-size:13px;color:#999;padding:8px 0">Buscando ventas recientes...</div>
+        <div id="ebay-sales-list"></div>
+      </div>
     </div>
 
     <div class="form-section">
-      <h2>👤 Jugador</h2>
+      <h2>&#128100; Jugador</h2>
       <div class="form-group">
         <label>Nombre del jugador *</label>
         <input type="text" id="f-player" placeholder="Ej: Lionel Messi" required>
@@ -76,11 +85,11 @@
         <div class="form-group">
           <label>Deporte</label>
           <select id="f-sport">
-            <option value="">— Selecciona —</option>
-            <option>fútbol</option>
+            <option value="">&#8212; Selecciona &#8212;</option>
+            <option>f&#250;tbol</option>
             <option>baloncesto</option>
-            <option>béisbol</option>
-            <option>fútbol americano</option>
+            <option>b&#233;isbol</option>
+            <option>f&#250;tbol americano</option>
             <option>hockey</option>
             <option>golf</option>
             <option>pokemon</option>
@@ -95,19 +104,19 @@
     </div>
 
     <div class="form-section">
-      <h2>🃏 Datos de la carta</h2>
+      <h2>&#127183; Datos de la carta</h2>
       <div class="form-row">
         <div class="form-group">
-          <label>Año</label>
+          <label>A&#241;o</label>
           <input type="number" id="f-year" placeholder="2023" min="1900" max="2099">
         </div>
         <div class="form-group">
-          <label>Nº de carta</label>
+          <label>N&#186; de carta</label>
           <input type="text" id="f-card-number" placeholder="Ej: #123">
         </div>
       </div>
       <div class="form-group">
-        <label>Set / Colección</label>
+        <label>Set / Colecci&#243;n</label>
         <input type="text" id="f-set" placeholder="Ej: Topps Chrome, Prizm...">
       </div>
       <div class="form-group">
@@ -115,18 +124,18 @@
         <input type="text" id="f-variant" placeholder="Ej: Refractor, Base, Holo...">
       </div>
       <div class="form-group">
-        <label>Numeración (si está limitada)</label>
+        <label>Numeraci&#243;n (si est&#225; limitada)</label>
         <input type="text" id="f-numbering" placeholder="Ej: /99, /25, 1/1">
       </div>
     </div>
 
     <div class="form-section">
-      <h2>🏆 Gradeo</h2>
+      <h2>&#127942; Gradeo</h2>
       <div class="form-group">
-        <label>¿Está gradada?</label>
+        <label>&#191;Est&#225; gradada?</label>
         <select id="f-graded" onchange="toggleGrade(this.value)">
           <option value="0">No</option>
-          <option value="1">Sí</option>
+          <option value="1">S&#237;</option>
         </select>
       </div>
       <div id="grade-fields" style="display:none">
@@ -150,12 +159,12 @@
     </div>
 
     <div class="form-section">
-      <h2>💶 Precio de compra</h2>
+      <h2>&#128182; Precio de compra</h2>
       <div class="form-row">
         <div class="form-group">
-          <label>Precio pagado (€)</label>
+          <label>Precio pagado (&#8364;)</label>
           <input type="number" id="f-price" placeholder="0.00" min="0" step="0.01" oninput="checkPrice(this)">
-          <div id="price-warn" style="display:none;font-size:12px;color:#e65100;margin-top:4px">⚠️ ¿Seguro que no quieres añadir precio de compra? Sin él no podrás calcular ROI ni beneficios.</div>
+          <div id="price-warn" style="display:none;font-size:12px;color:#e65100;margin-top:4px">&#9888;&#65039; &#191;Seguro que no quieres a&#241;adir precio de compra? Sin &#233;l no podr&#225;s calcular ROI ni beneficios.</div>
         </div>
         <div class="form-group">
           <label>Fecha de compra</label>
@@ -165,33 +174,32 @@
     </div>
 
     <div class="form-section">
-      <h2>📝 Notas</h2>
+      <h2>&#128221; Notas</h2>
       <div class="form-group">
         <textarea id="f-notes" rows="3" placeholder="Cualquier detalle adicional..."></textarea>
       </div>
     </div>
 
     <div class="form-section">
-      <h2>🏡 Colección personal</h2>
+      <h2>&#127969; Colecci&#243;n personal</h2>
       <label style="display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer">
         <input type="checkbox" id="f-personal" style="width:20px;height:20px;accent-color:var(--red)">
-        Esta carta es de mi colección personal (no se incluirá en avisos de antigüedad)
+        Esta carta es de mi colecci&#243;n personal (no se incluir&#225; en avisos de antig&#252;edad)
       </label>
     </div>
 
     <div id="alert-save"></div>
-    <button class="btn btn-primary" id="btn-save" onclick="saveCard()">💾 Guardar carta</button>
+    <button class="btn btn-primary" id="btn-save" onclick="saveCard()">&#128190; Guardar carta</button>
     <div style="height:16px"></div>
   </div>
 
 </div>
 
 <nav class="bottom-nav">
-  <a href="/"><span>🏠</span><span>Inicio</span></a>
-  <a href="/collection"><span>📚</span><span>Colección</span></a>
-  <a href="/add" class="add-btn active"><span>➕</span><span>Añadir</span></a>
-  <a href="/trades"><span>🔄</span><span>Trades</span></a>
-  <a href="/stats"><span>📈</span><span>Stats</span></a>
+  <a href="/"><span>&#127968;</span><span>Inicio</span></a>
+  <a href="/collection"><span>&#128218;</span><span>Colecci&#243;n</span></a>
+  <a href="/add" class="add-btn active"><span>&#10133;</span><span>A&#241;adir</span></a>
+  <a href="/stats"><span>&#128200;</span><span>Stats</span></a>
 </nav>
 
 <script>
@@ -214,6 +222,7 @@ function fixImageOrientation(file) {
   });
 }
 
+// Fecha de hoy por defecto
 document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 
 function previewPhoto(input, side) {
@@ -252,14 +261,15 @@ async function identify() {
       window._marketPrice = data.market_price;
       window._marketUpdated = data.market_price_updated;
       document.getElementById('ebay-price').textContent =
-        `${data.market_price.toFixed(2)} € (min ${data.ebay_result.min}€ / max ${data.ebay_result.max}€ · ${data.ebay_result.samples} resultados)`;
+        `${data.market_price.toFixed(2)} &#8364; (min ${data.ebay_result.min}&#8364; / max ${data.ebay_result.max}&#8364; &#183; ${data.ebay_result.samples} resultados)`;
       document.getElementById('ebay-info').style.display = '';
     }
     showForm(data);
+    loadRecentSales(data);
   } catch(e) {
     document.getElementById('step-loading').style.display = 'none';
     document.getElementById('step-photos').style.display = 'block';
-    document.getElementById('alert-photos').innerHTML = `<div class="alert alert-error">⚠️ ${e.message}</div>`;
+    document.getElementById('alert-photos').innerHTML = `<div class="alert alert-error">&#9888;&#65039; ${e.message}</div>`;
   }
 }
 
@@ -301,11 +311,57 @@ function checkPrice(input) {
   document.getElementById('price-warn').style.display = input.value ? 'none' : 'block';
 }
 
+async function loadRecentSales(cardData) {
+  const sec = document.getElementById('ebay-sales-section');
+  const loading = document.getElementById('ebay-sales-loading');
+  const list = document.getElementById('ebay-sales-list');
+  sec.style.display = '';
+  loading.style.display = '';
+  list.innerHTML = '';
+
+  try {
+    const r = await fetch('/api/ebay-recent-sales', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        player: cardData.player || document.getElementById('f-player').value,
+        year: cardData.year || parseInt(document.getElementById('f-year').value) || null,
+        set_name: cardData.set_name || document.getElementById('f-set').value || null,
+        numbering: cardData.numbering || document.getElementById('f-numbering').value || null,
+        grading_company: cardData.graded ? (cardData.grading_company || document.getElementById('f-grading-company').value) : null,
+        grade: cardData.graded ? (cardData.grade || document.getElementById('f-grade').value) : null,
+      })
+    });
+    const data = await r.json();
+    loading.style.display = 'none';
+    if (!r.ok || data.error) {
+      list.innerHTML = `<div style="font-size:13px;color:#999;padding:4px 0">${data.error || 'Sin ventas recientes'}</div>`;
+      return;
+    }
+    if (!data.sales || !data.sales.length) {
+      list.innerHTML = '<div style="font-size:13px;color:#999;padding:4px 0">Sin ventas recientes encontradas</div>';
+      return;
+    }
+    list.innerHTML = data.sales.map(s => `
+      <a href="${s.url}" target="_blank" rel="noopener" style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.title}</div>
+          <div style="font-size:11px;color:#999;margin-top:2px">${s.date}</div>
+        </div>
+        <div style="font-weight:700;color:#2e7d32;white-space:nowrap;font-size:15px">${s.price.toFixed(2)} ${s.currency}</div>
+      </a>`).join('') +
+      `<div style="font-size:11px;color:#999;margin-top:8px">B&#250;squeda: "${data.query}"</div>`;
+  } catch(e) {
+    loading.style.display = 'none';
+    list.innerHTML = '<div style="font-size:13px;color:#999">Error al cargar ventas</div>';
+  }
+}
+
 async function saveCard() {
   const player = document.getElementById('f-player').value.trim();
   const price = document.getElementById('f-price').value;
   if (!player) { alert('El nombre del jugador es obligatorio'); return; }
-  if (!price && !confirm('No has puesto precio de compra. ¿Guardar igualmente?')) return;
+  if (!price && !confirm('No has puesto precio de compra. &#191;Guardar igualmente?')) return;
 
   const btn = document.getElementById('btn-save');
   btn.disabled = true;
@@ -344,9 +400,9 @@ async function saveCard() {
     if (!r.ok) throw new Error(data.error);
     window.location.href = `/card/${data.id}`;
   } catch(e) {
-    document.getElementById('alert-save').innerHTML = `<div class="alert alert-error">⚠️ ${e.message}</div>`;
+    document.getElementById('alert-save').innerHTML = `<div class="alert alert-error">&#9888;&#65039; ${e.message}</div>`;
     btn.disabled = false;
-    btn.textContent = '💾 Guardar carta';
+    btn.textContent = '&#128190; Guardar carta';
   }
 }
 </script>
