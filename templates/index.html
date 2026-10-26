@@ -89,8 +89,8 @@ async function loadRecent() {
   document.getElementById('lbl-collection').textContent = cards.length + ' cartas';
 
   const totalVal = cards.reduce((s, c) => s + (c.purchase_price || 0), 0);
-  document.getElementById('total-value').textContent = totalVal.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' &#8364;';
-  document.getElementById('value-sub').textContent = cards.length + ' cartas en colecci&#243;n';
+  document.getElementById('total-value').innerHTML = totalVal.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' &#8364;';
+  document.getElementById('value-sub').innerHTML = cards.length + ' cartas en colecci&#243;n';
 
   if (!recent.length) {
     container.innerHTML = '<div class="empty-state"><div class="icon">&#127183;</div><p>A&#250;n no tienes cartas.<br>A&#241;ade tu primera carta.</p><a href="/add" class="btn btn-primary" style="max-width:240px;margin:0 auto">A&#241;adir primera carta</a></div>';
