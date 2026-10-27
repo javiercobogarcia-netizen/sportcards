@@ -254,11 +254,11 @@ function render() {
 async function fetchMarket() {
   const btn = document.getElementById('btn-market');
   btn.disabled = true;
-  btn.textContent = 'Buscando en eBay...';
+  btn.innerHTML = 'Buscando en eBay...';
   const r = await fetch(`/api/card/${CARD_ID}/market-price`, {method:'POST'});
   const data = await r.json();
   btn.disabled = false;
-  btn.textContent = '&#128269; Actualizar precio eBay';
+  btn.innerHTML = '&#128269; Actualizar precio eBay';
   if (!r.ok) {
     document.getElementById('market-alert').innerHTML = `<div class="alert alert-error">&#9888;&#65039; ${data.error}</div>`;
     return;
