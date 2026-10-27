@@ -502,8 +502,8 @@ def ebay_marketplace_deletion():
     # eBay sends a GET challenge first, then POST notifications
     if request.method == 'GET':
         challenge_code = request.args.get('challenge_code', '')
-                endpoint_url = 'https://web-production-424bb.up.railway.app/ebay/marketplace-deletion'
-                verification_token = os.getenv('EBAY_VERIFICATION_TOKEN', 'dc9d7286b9cf5e662bc61edb6bd2290c243d393c')
+        endpoint_url = 'https://web-production-424bb.up.railway.app/ebay/marketplace-deletion'
+        verification_token = os.getenv('EBAY_VERIFICATION_TOKEN', 'dc9d7286b9cf5e662bc61edb6bd2290c243d393c')
         import hashlib, json as _json
         hash_str = challenge_code + verification_token + endpoint_url
         challenge_response = hashlib.sha256(hash_str.encode()).hexdigest()
