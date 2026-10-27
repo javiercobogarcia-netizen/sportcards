@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from functools import wraps
 
 load_dotenv()
-
 from database import (init_db as _init_db, get_stats, get_all_cards, get_card, create_card, update_card,
                       add_price_history, get_price_history, get_filter_options,
                       create_user, verify_user, get_user, get_all_users,
@@ -503,8 +502,8 @@ def ebay_marketplace_deletion():
     # eBay sends a GET challenge first, then POST notifications
     if request.method == 'GET':
         challenge_code = request.args.get('challenge_code', '')
-        endpoint_url = request.url
-        verification_token = os.getenv('EBAY_VERIFICATION_TOKEN', 'sportcards_ebay_token_2024')
+                endpoint_url = 'https://web-production-424bb.up.railway.app/ebay/marketplace-deletion'
+                verification_token = os.getenv('EBAY_VERIFICATION_TOKEN', 'dc9d7286b9cf5e662bc61edb6bd2290c243d393c')
         import hashlib, json as _json
         hash_str = challenge_code + verification_token + endpoint_url
         challenge_response = hashlib.sha256(hash_str.encode()).hexdigest()
