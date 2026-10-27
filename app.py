@@ -498,5 +498,19 @@ def search_pokemon_price(name, set_name, card_number):
     """Busca precio en eBay para cartas Pok&#233;mon."""
     return search_card_price(name, None, set_name, None, None, None)
 
+@app.route('/ebay/marketplace-deletion', methods=['GET', 'POST'])
+def ebay_marketplace_deletion():
+    # eBay sends a GET challenge first, then POST notifications
+    if request.method == 'GET':
+        challenge_code = request.args.get('challenge_code', '')
+        endpoint_url = request.url
+        verification_token = os.getenv('EBAY_VERIFICATION_TOKEN', 'sportcards_ebay_token_2024')
+        import hashlib, json as _json
+        hash_str = challenge_code + verification_token + endpoint_url
+        challenge_response = hashlib.sha256(hash_str.encode()).hexdigest()
+        return _json.dumps({'challengeResponse': challenge_response}), 200, {'Content-Type': 'application/json'}
+    # POST: eBay notifies of account deletion &#8212; log and acknowledge
+    return jsonify({'status': 'ok'}), 200
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5052, debug=True)
