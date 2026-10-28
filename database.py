@@ -82,6 +82,7 @@ def init_db():
             FOREIGN KEY (card_id) REFERENCES cards(id)
         );
     ''')
+    # Migraciones para bases de datos antiguas
     migrations = [
         'ALTER TABLE cards ADD COLUMN user_id INTEGER DEFAULT 1',
         'ALTER TABLE cards ADD COLUMN personal_collection INTEGER DEFAULT 0',
@@ -96,6 +97,9 @@ def init_db():
             pass
     conn.commit()
     conn.close()
+
+# --- Usuarios ---
+
 def create_user(username, password):
     conn = get_db()
     c = conn.cursor()
@@ -142,6 +146,8 @@ def get_all_users():
     conn.close()
     return [dict(r) for r in rows]
 
+# --- Cartas ---
+
 def get_stats(user_id=None):
     conn = get_db()
     c = conn.cursor()
@@ -161,7 +167,7 @@ def get_stats(user_id=None):
     conn.close()
     return dict(row) if row else {}
 
-def get_all_cards(status=None, search=None, sport=None, year=None, set_name=None, user_id=None):
+def get_all_cards(status=None, search=None, sport=None, year=None, set_name=None, user_id=None, graded=None, sort=None, min_price=None, max_price=None):
     conn = get_db()
     c = conn.cursor()
     query = 'SELECT * FROM cards WHERE 1=1'
@@ -185,7 +191,24 @@ def get_all_cards(status=None, search=None, sport=None, year=None, set_name=None
     if set_name:
         query += ' AND set_name = ?'
         params.append(set_name)
-    query += ' ORDER BY created_at DESC'
+    if graded is not None:
+        query += ' AND graded = ?'
+        params.append(int(graded))
+    if min_price is not None:
+        query += ' AND purchase_price >= ?'
+        params.append(float(min_price))
+    if max_price is not None:
+        query += ' AND purchase_price <= ?'
+        params.append(float(max_price))
+    sort_map = {
+        'recent': 'created_at DESC',
+        'price_asc': 'purchase_price ASC',
+        'price_desc': 'purchase_price DESC',
+        'market_desc': 'market_price DESC',
+        'profit_desc': '(COALESCE(sale_price, market_price, 0) - COALESCE(purchase_price, 0)) DESC',
+        'player': 'player ASC',
+    }
+    query += ' ORDER BY ' + sort_map.get(sort, 'created_at DESC')
     c.execute(query, params)
     rows = c.fetchall()
     conn.close()
@@ -221,6 +244,7 @@ def get_card(card_id, user_id=None):
     row = c.fetchone()
     conn.close()
     return dict(row) if row else None
+
 def create_card(data, user_id=1):
     conn = get_db()
     c = conn.cursor()
@@ -351,6 +375,7 @@ def get_alerts(user_id=None):
     c = conn.cursor()
     where = 'AND user_id = ?' if user_id else ''
     params = (user_id,) if user_id else ()
+    # Cartas owned más de 6 meses sin vender, excluyendo colección personal
     c.execute(f'''
         SELECT COUNT(*) as count FROM cards
         WHERE status='owned'
@@ -360,6 +385,7 @@ def get_alerts(user_id=None):
         {where}
     ''', params)
     old_cards = c.fetchone()['count']
+
     c.execute(f'''
         SELECT id, player, purchase_date FROM cards
         WHERE status='owned'
@@ -400,6 +426,8 @@ def get_profit_by_period(user_id=None):
         'year':    query("date('now', '-365 days')"),
         'all':     query("'1900-01-01'"),
     }
+
+    # Beneficio por mes (últimos 12 meses)
     c.execute(f'''
         SELECT
             strftime('%Y-%m', sale_date) as month,
@@ -412,8 +440,11 @@ def get_profit_by_period(user_id=None):
         GROUP BY month ORDER BY month ASC
     ''', params)
     result['by_month'] = [dict(r) for r in c.fetchall()]
+
     conn.close()
     return result
+
+# --- Trades ---
 
 def create_trade(data, user_id=1):
     conn = get_db()
@@ -423,6 +454,7 @@ def create_trade(data, user_id=1):
         VALUES (?, ?, ?, ?)
     ''', (user_id, data.get('trade_date'), data.get('notes'), data.get('counterpart')))
     trade_id = c.lastrowid
+
     for card in data.get('give', []):
         card_id = card.get('card_id')
         value = card.get('value')
@@ -433,12 +465,14 @@ def create_trade(data, user_id=1):
         if card_id:
             c.execute("UPDATE cards SET status='traded', traded_in_trade_id=? WHERE id=?",
                       (trade_id, card_id))
+
     for card in data.get('receive', []):
         card_id = card.get('card_id')
         c.execute('''
             INSERT INTO trade_cards (trade_id, card_id, direction, player, description, value)
             VALUES (?, ?, 'receive', ?, ?, ?)
         ''', (trade_id, card_id, card.get('player'), card.get('description'), card.get('value')))
+
     conn.commit()
     conn.close()
     return trade_id
@@ -485,6 +519,7 @@ def get_portfolio_summary(user_id=None):
     c = conn.cursor()
     where = 'WHERE user_id = ?' if user_id else ''
     params = (user_id,) if user_id else ()
+
     c.execute(f'''
         SELECT
             COUNT(*) as total_cards,
@@ -499,6 +534,8 @@ def get_portfolio_summary(user_id=None):
         FROM cards {where}
     ''', params)
     summary = dict(c.fetchone())
+
+    # Top 5 cartas por valor de mercado
     c.execute(f'''
         SELECT id, player, year, set_name, grading_company, grade,
                purchase_price, market_price, photo_front,
@@ -508,6 +545,8 @@ def get_portfolio_summary(user_id=None):
         ORDER BY value DESC LIMIT 5
     ''', params)
     summary['top_by_value'] = [dict(r) for r in c.fetchall()]
+
+    # Top 5 por ganancia latente
     c.execute(f'''
         SELECT id, player, year, set_name, grading_company, grade,
                purchase_price, market_price, photo_front,
@@ -517,6 +556,8 @@ def get_portfolio_summary(user_id=None):
         ORDER BY gain DESC LIMIT 5
     ''', params)
     summary['top_by_gain'] = [dict(r) for r in c.fetchall()]
+
+    # Distribución por deporte
     c.execute(f'''
         SELECT sport, COUNT(*) as n,
                SUM(COALESCE(market_price, purchase_price, 0)) as value
@@ -524,6 +565,8 @@ def get_portfolio_summary(user_id=None):
         GROUP BY sport ORDER BY n DESC
     ''', params)
     summary['by_sport'] = [dict(r) for r in c.fetchall()]
+
+    # Valor mensual acumulado en ventas (últimos 12 meses)
     c.execute(f'''
         SELECT strftime('%Y-%m', sale_date) as month,
                SUM(sale_price) as revenue,
@@ -535,5 +578,6 @@ def get_portfolio_summary(user_id=None):
         GROUP BY month ORDER BY month ASC
     ''', params)
     summary['monthly_sales'] = [dict(r) for r in c.fetchall()]
+
     conn.close()
     return summary
