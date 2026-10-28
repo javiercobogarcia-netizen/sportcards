@@ -8,15 +8,17 @@
 <title>Colección — SportCards</title>
 <link rel="stylesheet" href="/static/css/app.css">
 <style>
-.filters-panel { background: white; border-radius: var(--radius); padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow); }
-.filters-panel h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+.filters-panel { background: #1a1a1a; border-radius: var(--radius); padding: 14px; margin-bottom: 14px; border: 1px solid #252525; }
 .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-.filter-row select { padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text); -webkit-appearance: none; outline: none; width: 100%; }
-.filter-row select:focus { border-color: var(--red); }
-.filter-clear { font-size: 12px; color: var(--red); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; }
+.filter-row select, .filter-row input {
+  padding: 9px 10px; border: 1.5px solid #333; border-radius: 8px;
+  font-size: 14px; background: #111; color: #fff; -webkit-appearance: none; outline: none; width: 100%;
+}
+.filter-row select:focus, .filter-row input:focus { border-color: var(--gold); }
+.filter-clear { font-size: 12px; color: var(--gold); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; }
 .active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.active-filter { background: #ffebee; color: var(--red); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
-.active-filter button { background: none; border: none; color: var(--red); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
+.active-filter { background: #1a1500; color: var(--gold); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.active-filter button { background: none; border: none; color: var(--gold); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
 </style>
 </head>
 <body>
@@ -25,6 +27,21 @@
   <a href="/" class="nav-back">‹</a>
   <h1>Mi colección</h1>
   <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar">📊</a>
+</div>
+
+<div class="coll-stats">
+  <div class="coll-stat">
+    <div class="coll-stat-val" id="stat-count">—</div>
+    <div class="coll-stat-lbl">Cartas</div>
+  </div>
+  <div class="coll-stat">
+    <div class="coll-stat-val blue" id="stat-value">—</div>
+    <div class="coll-stat-lbl">Valor</div>
+  </div>
+  <div class="coll-stat">
+    <div class="coll-stat-val" id="stat-roi">—</div>
+    <div class="coll-stat-lbl">ROI</div>
+  </div>
 </div>
 
 <div class="container">
@@ -41,7 +58,7 @@
 
   <details class="filters-panel" id="filters-details">
     <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;-webkit-appearance:none">
-      <h3 style="margin:0">🔽 Filtros</h3>
+      <span style="font-size:13px;color:#666;font-weight:600">🔽 Filtros</span>
       <button class="filter-clear" onclick="event.preventDefault();clearFilters()">Limpiar todo</button>
     </summary>
     <div style="margin-top:10px">
@@ -49,7 +66,7 @@
         <select id="f-sport" onchange="loadCards()"><option value="">Todos los deportes</option></select>
         <select id="f-year" onchange="loadCards()"><option value="">Todos los años</option></select>
       </div>
-      <select id="f-set" onchange="loadCards()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;-webkit-appearance:none;outline:none;margin-bottom:8px">
+      <select id="f-set" onchange="loadCards()" style="width:100%;padding:9px 10px;border:1.5px solid #333;border-radius:8px;font-size:14px;background:#111;color:#fff;-webkit-appearance:none;outline:none;margin-bottom:8px">
         <option value="">Todas las colecciones</option>
       </select>
       <div class="filter-row">
@@ -69,19 +86,19 @@
       </div>
       <div class="filter-row" style="align-items:center">
         <div style="position:relative">
-          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#999;font-size:13px">€</span>
-          <input type="number" id="f-min-price" placeholder="Precio mín" min="0" step="1" oninput="loadCards()" style="padding:9px 10px 9px 24px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;width:100%;outline:none">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px">€</span>
+          <input type="number" id="f-min-price" placeholder="Precio mín" min="0" step="1" oninput="loadCards()" style="padding-left:24px">
         </div>
         <div style="position:relative">
-          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#999;font-size:13px">€</span>
-          <input type="number" id="f-max-price" placeholder="Precio máx" min="0" step="1" oninput="loadCards()" style="padding:9px 10px 9px 24px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;width:100%;outline:none">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px">€</span>
+          <input type="number" id="f-max-price" placeholder="Precio máx" min="0" step="1" oninput="loadCards()" style="padding-left:24px">
         </div>
       </div>
     </div>
   </details>
 
   <div id="active-filters" class="active-filters"></div>
-  <div id="result-count" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
+  <div id="result-count" style="font-size:13px;color:#555;margin-bottom:10px"></div>
   <div id="cards-list"></div>
 
 </div>
@@ -126,6 +143,23 @@ function clearFilters() {
   loadCards();
 }
 
+function updateStats(cards) {
+  document.getElementById('stat-count').textContent = cards.length;
+  const owned = cards.filter(c => c.status !== 'sold');
+  const totalVal = owned.reduce((s, c) => s + (c.market_price || c.purchase_price || 0), 0);
+  const totalBought = owned.reduce((s, c) => s + (c.purchase_price || 0), 0);
+  document.getElementById('stat-value').textContent = '€' + Math.round(totalVal).toLocaleString('es');
+  const roiEl = document.getElementById('stat-roi');
+  if (totalBought > 0) {
+    const roi = ((totalVal - totalBought) / totalBought * 100);
+    roiEl.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%';
+    roiEl.className = 'coll-stat-val ' + (roi >= 0 ? 'green' : 'red');
+  } else {
+    roiEl.textContent = '—';
+    roiEl.className = 'coll-stat-val';
+  }
+}
+
 async function loadCards() {
   const q = document.getElementById('search').value.trim();
   const sport = document.getElementById('f-sport').value;
@@ -147,7 +181,6 @@ async function loadCards() {
   if (minPrice) params.append('min_price', minPrice);
   if (maxPrice) params.append('max_price', maxPrice);
 
-  // Mostrar filtros activos
   const active = [];
   if (sport) active.push({label: sport.charAt(0).toUpperCase()+sport.slice(1), key: 'f-sport'});
   if (year) active.push({label: year, key: 'f-year'});
@@ -162,6 +195,8 @@ async function loadCards() {
 
   const r = await fetch('/api/cards?' + params);
   const cards = await r.json();
+
+  updateStats(cards);
   document.getElementById('result-count').textContent = cards.length ? `${cards.length} carta${cards.length!==1?'s':''}` : '';
 
   const container = document.getElementById('cards-list');
@@ -170,37 +205,43 @@ async function loadCards() {
     return;
   }
 
-  container.innerHTML = cards.map(c => {
-    const thumb = c.photo_front
-      ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">`
-      : `<div class="card-thumb-placeholder">🃏</div>`;
-    const numbering = c.numbering ? String(c.numbering).replace(/^\/+/,'') : null;
-    const badges = [
-      c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
-      numbering ? `<span class="badge badge-numbered">/${numbering}</span>` : '',
-      c.status === 'sold' ? `<span class="badge badge-sold">Vendida</span>` : '',
-    ].filter(Boolean).join(' ');
+  container.innerHTML = `<div class="cards-grid">${cards.map(c => {
+    const photo = c.photo_front
+      ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
+      : '<span>🃏</span>';
+    const gradedBadge = c.graded
+      ? `<div class="grid-badge-tr">${[c.grading_company, c.grade].filter(Boolean).join(' ')}</div>`
+      : '';
+    const numBadge = c.numbering
+      ? `<div class="grid-badge-tl">/${String(c.numbering).replace(/^\/+/,'')}</div>`
+      : '';
+    const soldBadge = c.status === 'sold' ? '<div class="grid-badge-sold">VENDIDA</div>' : '';
 
-    let priceHtml = '';
+    let price = c.purchase_price ? c.purchase_price.toFixed(2) + ' €' : '—';
+    let roiHtml = '';
     if (c.status === 'sold' && c.sale_price && c.purchase_price) {
-      const profit = c.sale_price - c.purchase_price;
-      const roi = ((profit / c.purchase_price) * 100).toFixed(1);
-      priceHtml = `<div class="card-price">Vendida: ${c.sale_price.toFixed(2)} € <span class="${profit>=0?'roi-positive':'roi-negative'}">(${profit>=0?'+':''}${profit.toFixed(2)} € / ${roi}%)</span></div>`;
-    } else {
-      priceHtml = `<div class="card-price">Compra: ${c.purchase_price ? c.purchase_price.toFixed(2)+' €' : '—'}${c.market_price ? ' · Mercado: '+c.market_price.toFixed(2)+' €' : ''}</div>`;
+      const roi = ((c.sale_price - c.purchase_price) / c.purchase_price * 100).toFixed(1);
+      const cls = c.sale_price >= c.purchase_price ? 'grid-roi-pos' : 'grid-roi-neg';
+      roiHtml = `<span class="${cls}">${c.sale_price >= c.purchase_price ? '+' : ''}${roi}%</span>`;
+      price = c.sale_price.toFixed(2) + ' €';
+    } else if (c.market_price && c.purchase_price) {
+      const roi = ((c.market_price - c.purchase_price) / c.purchase_price * 100).toFixed(1);
+      const cls = c.market_price >= c.purchase_price ? 'grid-roi-pos' : 'grid-roi-neg';
+      roiHtml = `<span class="${cls}">${c.market_price >= c.purchase_price ? '+' : ''}${roi}%</span>`;
     }
 
-    return `<a href="/card/${c.id}" class="card-item">
-      ${thumb}
-      <div class="card-info">
-        <div class="card-player">${c.player}</div>
-        <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' · ')}</div>
-        ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
-        ${priceHtml}
+    return `<a href="/card/${c.id}" class="grid-card">
+      <div class="grid-card-img">${photo}${gradedBadge}${numBadge}${soldBadge}</div>
+      <div class="grid-card-info">
+        <div class="grid-card-player">${c.player}</div>
+        <div class="grid-card-set">${[c.year, c.set_name].filter(Boolean).join(' · ')}</div>
+        <div class="grid-card-bottom">
+          <span class="grid-card-price">${price}</span>
+          ${roiHtml}
+        </div>
       </div>
-      <span style="color:#ccc;font-size:20px">›</span>
     </a>`;
-  }).join('');
+  }).join('')}</div>`;
 }
 
 loadFilterOptions();
