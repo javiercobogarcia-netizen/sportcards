@@ -7,6 +7,16 @@
 <meta name="theme-color" content="#111111">
 <title>Carta — SportCards</title>
 <link rel="stylesheet" href="/static/css/app.css">
+<style>
+#lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; align-items:center; justify-content:center; }
+#lightbox.open { display:flex; }
+#lightbox img { max-width:95vw; max-height:90vh; object-fit:contain; border-radius:8px; }
+#lightbox-close { position:absolute; top:16px; right:16px; color:white; font-size:32px; cursor:pointer; background:none; border:none; line-height:1; }
+#lightbox-prev, #lightbox-next { position:absolute; top:50%; transform:translateY(-50%); color:white; font-size:36px; cursor:pointer; background:none; border:none; padding:16px; opacity:0.7; }
+#lightbox-prev { left:8px; }
+#lightbox-next { right:8px; }
+.card-photos img { cursor:zoom-in; }
+</style>
 </head>
 <body>
 
@@ -120,6 +130,14 @@
   <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
 </div>
 
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">×</button>
+  <button id="lightbox-prev" onclick="event.stopPropagation();lbNav(-1)">‹</button>
+  <img id="lightbox-img" src="" alt="">
+  <button id="lightbox-next" onclick="event.stopPropagation();lbNav(1)">›</button>
+</div>
+
 <nav class="bottom-nav">
   <a href="/"><span>🏠</span><span>Inicio</span></a>
   <a href="/collection"><span>📚</span><span>Colección</span></a>
@@ -129,6 +147,36 @@
 <script>
 const CARD_ID = {{ card_id }};
 let card = null;
+let lbPhotos = [];
+let lbIndex = 0;
+
+function openLightbox(idx) {
+  if (!lbPhotos.length) return;
+  lbIndex = idx;
+  document.getElementById('lightbox-img').src = lbPhotos[lbIndex];
+  document.getElementById('lightbox').classList.add('open');
+  document.getElementById('lightbox-prev').style.display = lbPhotos.length > 1 ? '' : 'none';
+  document.getElementById('lightbox-next').style.display = lbPhotos.length > 1 ? '' : 'none';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function lbNav(dir) {
+  lbIndex = (lbIndex + dir + lbPhotos.length) % lbPhotos.length;
+  document.getElementById('lightbox-img').src = lbPhotos[lbIndex];
+}
+
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('lightbox');
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') lbNav(-1);
+  if (e.key === 'ArrowRight') lbNav(1);
+});
 
 async function load() {
   const r = await fetch(`/api/card/${CARD_ID}`);
@@ -141,10 +189,13 @@ async function load() {
 function render() {
   const c = card;
   let photosHtml = '';
-  if (c.photo_front || c.photo_back) {
+  lbPhotos = [];
+  if (c.photo_front) lbPhotos.push('/' + c.photo_front);
+  if (c.photo_back) lbPhotos.push('/' + c.photo_back);
+  if (lbPhotos.length) {
     photosHtml = `<div class="card-photos">
-      ${c.photo_front ? `<img src="/${c.photo_front}" alt="Delantera">` : ''}
-      ${c.photo_back ? `<img src="/${c.photo_back}" alt="Trasera">` : ''}
+      ${c.photo_front ? `<img src="/${c.photo_front}" alt="Delantera" onclick="openLightbox(0)">` : ''}
+      ${c.photo_back ? `<img src="/${c.photo_back}" alt="Trasera" onclick="openLightbox(${lbPhotos.length > 1 ? 1 : 0})">` : ''}
     </div>`;
   }
 
