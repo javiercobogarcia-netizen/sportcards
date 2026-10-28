@@ -39,19 +39,46 @@
     <button class="filter-tab" data-status="sold" onclick="setFilter(this,'sold')">Vendidas</button>
   </div>
 
-  <div class="filters-panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+  <details class="filters-panel" id="filters-details">
+    <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;-webkit-appearance:none">
       <h3 style="margin:0">🔽 Filtros</h3>
-      <button class="filter-clear" onclick="clearFilters()">Limpiar todo</button>
+      <button class="filter-clear" onclick="event.preventDefault();clearFilters()">Limpiar todo</button>
+    </summary>
+    <div style="margin-top:10px">
+      <div class="filter-row">
+        <select id="f-sport" onchange="loadCards()"><option value="">Todos los deportes</option></select>
+        <select id="f-year" onchange="loadCards()"><option value="">Todos los años</option></select>
+      </div>
+      <select id="f-set" onchange="loadCards()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;-webkit-appearance:none;outline:none;margin-bottom:8px">
+        <option value="">Todas las colecciones</option>
+      </select>
+      <div class="filter-row">
+        <select id="f-graded" onchange="loadCards()">
+          <option value="">Gradadas y no grad.</option>
+          <option value="1">Solo gradadas</option>
+          <option value="0">Solo sin gradar</option>
+        </select>
+        <select id="f-sort" onchange="loadCards()">
+          <option value="recent">Más recientes</option>
+          <option value="player">Jugador A-Z</option>
+          <option value="price_desc">Precio compra ↓</option>
+          <option value="price_asc">Precio compra ↑</option>
+          <option value="market_desc">Valor mercado ↓</option>
+          <option value="profit_desc">Mayor beneficio ↓</option>
+        </select>
+      </div>
+      <div class="filter-row" style="align-items:center">
+        <div style="position:relative">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#999;font-size:13px">€</span>
+          <input type="number" id="f-min-price" placeholder="Precio mín" min="0" step="1" oninput="loadCards()" style="padding:9px 10px 9px 24px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;width:100%;outline:none">
+        </div>
+        <div style="position:relative">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#999;font-size:13px">€</span>
+          <input type="number" id="f-max-price" placeholder="Precio máx" min="0" step="1" oninput="loadCards()" style="padding:9px 10px 9px 24px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;width:100%;outline:none">
+        </div>
+      </div>
     </div>
-    <div class="filter-row">
-      <select id="f-sport" onchange="loadCards()"><option value="">Todos los deportes</option></select>
-      <select id="f-year" onchange="loadCards()"><option value="">Todos los años</option></select>
-    </div>
-    <select id="f-set" onchange="loadCards()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;-webkit-appearance:none;outline:none">
-      <option value="">Todas las colecciones</option>
-    </select>
-  </div>
+  </details>
 
   <div id="active-filters" class="active-filters"></div>
   <div id="result-count" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
@@ -91,6 +118,10 @@ function clearFilters() {
   document.getElementById('f-sport').value = '';
   document.getElementById('f-year').value = '';
   document.getElementById('f-set').value = '';
+  document.getElementById('f-graded').value = '';
+  document.getElementById('f-sort').value = 'recent';
+  document.getElementById('f-min-price').value = '';
+  document.getElementById('f-max-price').value = '';
   document.getElementById('search').value = '';
   loadCards();
 }
@@ -100,6 +131,10 @@ async function loadCards() {
   const sport = document.getElementById('f-sport').value;
   const year = document.getElementById('f-year').value;
   const set = document.getElementById('f-set').value;
+  const graded = document.getElementById('f-graded').value;
+  const sort = document.getElementById('f-sort').value;
+  const minPrice = document.getElementById('f-min-price').value;
+  const maxPrice = document.getElementById('f-max-price').value;
 
   const params = new URLSearchParams();
   if (currentStatus) params.append('status', currentStatus);
@@ -107,12 +142,20 @@ async function loadCards() {
   if (sport) params.append('sport', sport);
   if (year) params.append('year', year);
   if (set) params.append('set', set);
+  if (graded !== '') params.append('graded', graded);
+  if (sort && sort !== 'recent') params.append('sort', sort);
+  if (minPrice) params.append('min_price', minPrice);
+  if (maxPrice) params.append('max_price', maxPrice);
 
   // Mostrar filtros activos
   const active = [];
   if (sport) active.push({label: sport.charAt(0).toUpperCase()+sport.slice(1), key: 'f-sport'});
   if (year) active.push({label: year, key: 'f-year'});
-  if (set) active.push({label: set.length > 25 ? set.substring(0,25)+'…' : set, key: 'f-set'});
+  if (set) active.push({label: set.length > 20 ? set.substring(0,20)+'…' : set, key: 'f-set'});
+  if (graded === '1') active.push({label: 'Gradadas', key: 'f-graded'});
+  if (graded === '0') active.push({label: 'Sin gradar', key: 'f-graded'});
+  if (minPrice) active.push({label: `≥${minPrice}€`, key: 'f-min-price'});
+  if (maxPrice) active.push({label: `≤${maxPrice}€`, key: 'f-max-price'});
   document.getElementById('active-filters').innerHTML = active.map(a =>
     `<div class="active-filter">${a.label}<button onclick="document.getElementById('${a.key}').value='';loadCards()">×</button></div>`
   ).join('');
