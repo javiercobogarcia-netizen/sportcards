@@ -26,7 +26,10 @@
 <div class="nav">
   <a href="/" class="nav-back">‹</a>
   <h1>Mi colección</h1>
-  <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar">📊</a>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button id="view-toggle" onclick="toggleView()" title="Cambiar vista" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:0;line-height:1">☰</button>
+    <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar">📊</a>
+  </div>
 </div>
 
 <div class="coll-stats">
@@ -112,6 +115,80 @@
 
 <script>
 let currentStatus = '';
+let viewMode = localStorage.getItem('coll-view') || 'list';
+
+function toggleView() {
+  viewMode = viewMode === 'list' ? 'grid' : 'list';
+  localStorage.setItem('coll-view', viewMode);
+  document.getElementById('view-toggle').textContent = viewMode === 'list' ? '☰' : '⊞';
+  renderCards(window._lastCards || []);
+}
+
+function renderCards(cards) {
+  window._lastCards = cards;
+  updateStats(cards);
+  document.getElementById('result-count').textContent = cards.length ? `${cards.length} carta${cards.length!==1?'s':''}` : '';
+  const container = document.getElementById('cards-list');
+  if (!cards.length) {
+    const q = document.getElementById('search').value.trim();
+    container.innerHTML = `<div class="empty-state"><div class="icon">🃏</div><p>No hay cartas${q ? ' para "'+q+'"' : ''}.</p><a href="/add" class="btn btn-primary" style="max-width:220px;margin:0 auto">Añadir carta</a></div>`;
+    return;
+  }
+  if (viewMode === 'grid') {
+    container.innerHTML = `<div class="cards-grid">${cards.map(c => {
+      const photo = c.photo_front ? `<img src="/${c.photo_front}" loading="lazy" alt="">` : '<span>🃏</span>';
+      const gradedBadge = c.graded ? `<div class="grid-badge-tr">${[c.grading_company, c.grade].filter(Boolean).join(' ')}</div>` : '';
+      const numBadge = c.numbering ? `<div class="grid-badge-tl">/${String(c.numbering).replace(/^\/+/,'')}</div>` : '';
+      const soldBadge = c.status === 'sold' ? '<div class="grid-badge-sold">VENDIDA</div>' : '';
+      let price = c.purchase_price ? c.purchase_price.toFixed(2) + ' €' : '—';
+      let roiHtml = '';
+      if (c.status === 'sold' && c.sale_price && c.purchase_price) {
+        const roi = ((c.sale_price - c.purchase_price) / c.purchase_price * 100).toFixed(1);
+        roiHtml = `<span class="${c.sale_price >= c.purchase_price ? 'grid-roi-pos' : 'grid-roi-neg'}">${c.sale_price >= c.purchase_price ? '+' : ''}${roi}%</span>`;
+        price = c.sale_price.toFixed(2) + ' €';
+      } else if (c.market_price && c.purchase_price) {
+        const roi = ((c.market_price - c.purchase_price) / c.purchase_price * 100).toFixed(1);
+        roiHtml = `<span class="${c.market_price >= c.purchase_price ? 'grid-roi-pos' : 'grid-roi-neg'}">${c.market_price >= c.purchase_price ? '+' : ''}${roi}%</span>`;
+      }
+      return `<a href="/card/${c.id}" class="grid-card">
+        <div class="grid-card-img">${photo}${gradedBadge}${numBadge}${soldBadge}</div>
+        <div class="grid-card-info">
+          <div class="grid-card-player">${c.player}</div>
+          <div class="grid-card-set">${[c.year, c.set_name].filter(Boolean).join(' · ')}</div>
+          <div class="grid-card-bottom"><span class="grid-card-price">${price}</span>${roiHtml}</div>
+        </div>
+      </a>`;
+    }).join('')}</div>`;
+  } else {
+    container.innerHTML = cards.map(c => {
+      const thumb = c.photo_front ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">` : `<div class="card-thumb-placeholder">🃏</div>`;
+      const numbering = c.numbering ? String(c.numbering).replace(/^\/+/,'') : null;
+      const badges = [
+        c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
+        numbering ? `<span class="badge badge-numbered">/${numbering}</span>` : '',
+        c.status === 'sold' ? `<span class="badge badge-sold">Vendida</span>` : '',
+      ].filter(Boolean).join(' ');
+      let priceHtml = '';
+      if (c.status === 'sold' && c.sale_price && c.purchase_price) {
+        const profit = c.sale_price - c.purchase_price;
+        const roi = ((profit / c.purchase_price) * 100).toFixed(1);
+        priceHtml = `<div class="card-price">Vendida: ${c.sale_price.toFixed(2)} € <span class="${profit>=0?'roi-positive':'roi-negative'}">(${profit>=0?'+':''}${profit.toFixed(2)} € / ${roi}%)</span></div>`;
+      } else {
+        priceHtml = `<div class="card-price">Compra: ${c.purchase_price ? c.purchase_price.toFixed(2)+' €' : '—'}${c.market_price ? ' · Mercado: '+c.market_price.toFixed(2)+' €' : ''}</div>`;
+      }
+      return `<a href="/card/${c.id}" class="card-item">
+        ${thumb}
+        <div class="card-info">
+          <div class="card-player">${c.player}</div>
+          <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' · ')}</div>
+          ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
+          ${priceHtml}
+        </div>
+        <span style="color:#3a3a3a;font-size:20px">›</span>
+      </a>`;
+    }).join('');
+  }
+}
 
 async function loadFilterOptions() {
   const r = await fetch('/api/filter-options');
@@ -195,55 +272,10 @@ async function loadCards() {
 
   const r = await fetch('/api/cards?' + params);
   const cards = await r.json();
-
-  updateStats(cards);
-  document.getElementById('result-count').textContent = cards.length ? `${cards.length} carta${cards.length!==1?'s':''}` : '';
-
-  const container = document.getElementById('cards-list');
-  if (!cards.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">🃏</div><p>No hay cartas${q ? ' para "'+q+'"' : ''}.</p><a href="/add" class="btn btn-primary" style="max-width:220px;margin:0 auto">Añadir carta</a></div>`;
-    return;
-  }
-
-  container.innerHTML = `<div class="cards-grid">${cards.map(c => {
-    const photo = c.photo_front
-      ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
-      : '<span>🃏</span>';
-    const gradedBadge = c.graded
-      ? `<div class="grid-badge-tr">${[c.grading_company, c.grade].filter(Boolean).join(' ')}</div>`
-      : '';
-    const numBadge = c.numbering
-      ? `<div class="grid-badge-tl">/${String(c.numbering).replace(/^\/+/,'')}</div>`
-      : '';
-    const soldBadge = c.status === 'sold' ? '<div class="grid-badge-sold">VENDIDA</div>' : '';
-
-    let price = c.purchase_price ? c.purchase_price.toFixed(2) + ' €' : '—';
-    let roiHtml = '';
-    if (c.status === 'sold' && c.sale_price && c.purchase_price) {
-      const roi = ((c.sale_price - c.purchase_price) / c.purchase_price * 100).toFixed(1);
-      const cls = c.sale_price >= c.purchase_price ? 'grid-roi-pos' : 'grid-roi-neg';
-      roiHtml = `<span class="${cls}">${c.sale_price >= c.purchase_price ? '+' : ''}${roi}%</span>`;
-      price = c.sale_price.toFixed(2) + ' €';
-    } else if (c.market_price && c.purchase_price) {
-      const roi = ((c.market_price - c.purchase_price) / c.purchase_price * 100).toFixed(1);
-      const cls = c.market_price >= c.purchase_price ? 'grid-roi-pos' : 'grid-roi-neg';
-      roiHtml = `<span class="${cls}">${c.market_price >= c.purchase_price ? '+' : ''}${roi}%</span>`;
-    }
-
-    return `<a href="/card/${c.id}" class="grid-card">
-      <div class="grid-card-img">${photo}${gradedBadge}${numBadge}${soldBadge}</div>
-      <div class="grid-card-info">
-        <div class="grid-card-player">${c.player}</div>
-        <div class="grid-card-set">${[c.year, c.set_name].filter(Boolean).join(' · ')}</div>
-        <div class="grid-card-bottom">
-          <span class="grid-card-price">${price}</span>
-          ${roiHtml}
-        </div>
-      </div>
-    </a>`;
-  }).join('')}</div>`;
+  renderCards(cards);
 }
 
+document.getElementById('view-toggle').textContent = viewMode === 'list' ? '☰' : '⊞';
 loadFilterOptions();
 loadCards();
 </script>
