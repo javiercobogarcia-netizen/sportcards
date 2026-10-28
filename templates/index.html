@@ -20,56 +20,33 @@
 
 <div class="container">
 
-  <div class="home-stats" id="home-stats">
-    <div class="home-stat">
-      <div class="home-stat-val" id="hs-cards">—</div>
-      <div class="home-stat-lbl">Cartas</div>
-    </div>
-    <div class="home-stat">
-      <div class="home-stat-val blue" id="hs-value">—</div>
-      <div class="home-stat-lbl">Valor</div>
-    </div>
-    <div class="home-stat">
-      <div class="home-stat-val" id="hs-roi">—</div>
-      <div class="home-stat-lbl">ROI</div>
-    </div>
-  </div>
-
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-    <a href="/collection" class="home-btn home-btn-dark">
-      <div class="home-btn-icon">📚</div>
-      <div class="home-btn-label">Colección</div>
-      <div class="home-btn-sub" id="owned-count">Ver todas</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <a href="/collection" style="text-decoration:none;background:#1a1a1a;border:1px solid #252525;border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff">
+      <span style="font-size:28px">📚</span>
+      <span style="font-size:13px;font-weight:600">Colección</span>
     </a>
-    <a href="/add" class="home-btn home-btn-gold">
-      <div class="home-btn-icon">➕</div>
-      <div class="home-btn-label">Añadir carta</div>
-      <div class="home-btn-sub">Foto o manual</div>
+    <a href="/add" style="text-decoration:none;background:var(--gold);border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#111">
+      <span style="font-size:28px">➕</span>
+      <span style="font-size:13px;font-weight:600">Añadir carta</span>
     </a>
-    <a href="/trades" class="home-btn home-btn-dark">
-      <div class="home-btn-icon">🔄</div>
-      <div class="home-btn-label">Trades</div>
-      <div class="home-btn-sub">Intercambios</div>
+    <a href="/trades" style="text-decoration:none;background:#1a1a1a;border:1px solid #252525;border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff">
+      <span style="font-size:28px">🔄</span>
+      <span style="font-size:13px;font-weight:600">Trades</span>
     </a>
-    <a href="/stats" class="home-btn home-btn-dark">
-      <div class="home-btn-icon">📈</div>
-      <div class="home-btn-label">Estadísticas</div>
-      <div class="home-btn-sub">ROI · beneficio</div>
+    <a href="/stats" style="text-decoration:none;background:#1a1a1a;border:1px solid #252525;border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff">
+      <span style="font-size:28px">📈</span>
+      <span style="font-size:13px;font-weight:600">Estadísticas</span>
     </a>
   </div>
 
   <div id="alerts-section" style="margin-bottom:16px"></div>
 
-  <div class="section-header">
-    <span class="section-title">Últimas añadidas</span>
-    <a href="/collection" class="section-link">Ver todas →</a>
-  </div>
-  <div id="recent-cards" class="recent-grid"></div>
+  <h2 style="margin-bottom:12px;font-size:16px;color:#666">Últimas añadidas</h2>
+  <div id="recent-cards"></div>
+  <a href="/collection" class="btn btn-secondary" style="margin-top:8px">Ver colección completa →</a>
 
   <div id="other-users-section" style="display:none;margin-top:24px">
-    <div class="section-header">
-      <span class="section-title">👥 Otros usuarios</span>
-    </div>
+    <h2 style="margin-bottom:12px;font-size:16px;color:#666">👥 Colecciones de otros usuarios</h2>
     <div id="other-users-list"></div>
   </div>
 
@@ -84,42 +61,37 @@
 </nav>
 
 <script>
-async function loadStats() {
-  const r = await fetch('/api/stats');
-  const s = await r.json();
-  document.getElementById('hs-cards').textContent = s.owned || 0;
-  document.getElementById('owned-count').textContent = (s.owned || 0) + ' en posesión';
-  const val = s.current_value || 0;
-  document.getElementById('hs-value').textContent = '€' + Math.round(val).toLocaleString('es');
-  const bought = s.total_invested || 0;
-  const roiEl = document.getElementById('hs-roi');
-  if (bought > 0) {
-    const roi = ((val - bought) / bought * 100);
-    roiEl.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%';
-    roiEl.className = 'home-stat-val ' + (roi >= 0 ? 'green' : 'red');
-  } else {
-    roiEl.textContent = '—';
-  }
-}
-
 async function loadRecent() {
   const r = await fetch('/api/cards?status=owned');
   const cards = await r.json();
   const container = document.getElementById('recent-cards');
-  const recent = cards.slice(0, 6);
+  const recent = cards.slice(0, 5);
   if (!recent.length) {
-    container.outerHTML = '<div class="empty-state"><div class="icon">🃏</div><p>Aún no tienes cartas.</p><a href="/add" class="btn btn-primary" style="max-width:240px;margin:0 auto">Añadir primera carta</a></div>';
+    container.innerHTML = '<div class="empty-state"><div class="icon">🃏</div><p>Aún no tienes cartas.<br>Añade tu primera carta.</p><a href="/add" class="btn btn-primary" style="max-width:240px;margin:0 auto">Añadir primera carta</a></div>';
     return;
   }
-  container.innerHTML = recent.map(c => {
-    const img = c.photo_front
-      ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
-      : '<span style="font-size:24px">🃏</span>';
-    return `<a href="/card/${c.id}" class="recent-mini">
-      <div class="recent-mini-img">${img}</div>
-      <div class="recent-mini-name">${c.player}</div>
-    </a>`;
-  }).join('');
+  container.innerHTML = recent.map(cardHTML).join('');
+}
+
+function cardHTML(c) {
+  const thumb = c.photo_front
+    ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">`
+    : `<div class="card-thumb-placeholder">🃏</div>`;
+  const badges = [
+    c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
+    c.numbering ? `<span class="badge badge-numbered">/${c.numbering}</span>` : '',
+  ].filter(Boolean).join(' ');
+  const price = c.purchase_price ? `${c.purchase_price.toFixed(2)} €` : '—';
+  return `<a href="/card/${c.id}" class="card-item">
+    ${thumb}
+    <div class="card-info">
+      <div class="card-player">${c.player}</div>
+      <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' · ')}</div>
+      ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
+      <div class="card-price">Compra: ${price}</div>
+    </div>
+    <span style="color:#3a3a3a;font-size:20px">›</span>
+  </a>`;
 }
 
 async function loadOtherUsers() {
@@ -152,7 +124,6 @@ async function loadAlerts() {
   sec.innerHTML = alerts.join('');
 }
 
-loadStats();
 loadRecent();
 loadOtherUsers();
 loadAlerts();
