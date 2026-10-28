@@ -51,6 +51,7 @@ def _build_query(player, year, set_name, numbering=None, grading_company=None, g
 
 
 def _fetch_sold_finding(query, app_id, token, limit=12):
+    """Finding API con OAuth Bearer token para evitar el 418."""
     params = {
         'OPERATION-NAME': 'findCompletedItems',
         'SERVICE-VERSION': '1.0.0',
@@ -73,6 +74,7 @@ def _fetch_sold_finding(query, app_id, token, limit=12):
         return None, '418'
     if r.status_code != 200:
         return None, f'eBay error {r.status_code}'
+
     data = r.json()
     result = data.get('findCompletedItemsResponse', [{}])[0]
     if result.get('ack', [''])[0] != 'Success':
@@ -82,6 +84,7 @@ def _fetch_sold_finding(query, app_id, token, limit=12):
 
 
 def _fetch_active_browse(query, token, player, limit=20):
+    """Fallback: Browse API listados activos filtrados por nombre del jugador."""
     headers = {
         'Authorization': f'Bearer {token}',
         'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
@@ -97,7 +100,9 @@ def _fetch_active_browse(query, token, player, limit=20):
     r = requests.get(BROWSE_API_URL, headers=headers, params=params, timeout=10)
     if r.status_code != 200:
         return None, f'eBay error {r.status_code}'
+
     items = r.json().get('itemSummaries', [])
+    # Filtramos los que contengan el nombre del jugador en el título
     player_lower = player.lower()
     relevant = [i for i in items if player_lower in i.get('title', '').lower()]
     return relevant if relevant else items, None
@@ -117,14 +122,22 @@ def search_card_price(player, year, set_name, numbering=None, grading_company=No
     source = 'sold'
 
     try:
+        # Intentar primero con Finding API (ventas reales)
         raw_items, err = _fetch_sold_finding(query, app_id, token, limit=12)
 
         if err == '418' or not raw_items:
+            # Fallback: Browse API con listados activos filtrados
             source = 'active'
             browse_items, err2 = _fetch_active_browse(query, token, player)
             if err2 or not browse_items:
                 return None, err2 or 'Sin resultados en eBay'
-            prices = [float(i.get('price', {}).get('value', 0)) for i in browse_items if i.get('price', {}).get('value')]
+
+            prices = []
+            for item in browse_items:
+                val = item.get('price', {}).get('value')
+                if val:
+                    prices.append(float(val))
+
         else:
             prices = []
             for item in raw_items:
@@ -171,19 +184,24 @@ def get_recent_sales(player, year=None, set_name=None, numbering=None, grading_c
         raw_items, err = _fetch_sold_finding(query, app_id, token, limit=limit)
 
         if err == '418' or not raw_items:
+            # Fallback Browse API
             browse_items, err2 = _fetch_active_browse(query, token, player, limit=limit)
             if err2 or not browse_items:
                 return None, err2 or 'Sin ventas recientes'
+
             sales = []
             for item in browse_items:
                 val = item.get('price', {}).get('value')
+                currency = item.get('price', {}).get('currency', 'USD')
+                title = item.get('title', '')
+                url = item.get('itemWebUrl', '')
                 if val:
                     sales.append({
-                        'title': item.get('title', ''),
+                        'title': title,
                         'price': round(float(val), 2),
-                        'currency': item.get('price', {}).get('currency', 'USD'),
+                        'currency': currency,
                         'date': '',
-                        'url': item.get('itemWebUrl', ''),
+                        'url': url,
                         'note': 'listado activo',
                     })
             if not sales:

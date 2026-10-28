@@ -87,6 +87,7 @@ def init_db():
         'ALTER TABLE cards ADD COLUMN user_id INTEGER DEFAULT 1',
         'ALTER TABLE cards ADD COLUMN personal_collection INTEGER DEFAULT 0',
         'ALTER TABLE cards ADD COLUMN traded_in_trade_id INTEGER',
+        'ALTER TABLE cards ADD COLUMN cert_number TEXT',
     ]
     for sql in migrations:
         try:
@@ -262,7 +263,7 @@ def update_card(card_id, data):
                'numbering','graded','grading_company','grade','purchase_price',
                'purchase_date','sale_price','sale_date','status','market_price',
                'market_price_updated','qr_code','notes','personal_collection',
-               'traded_in_trade_id']
+               'traded_in_trade_id','cert_number']
     for field in allowed:
         if field in data:
             fields.append(f'{field} = ?')
@@ -357,6 +358,7 @@ def get_alerts(user_id=None):
     c = conn.cursor()
     where = 'AND user_id = ?' if user_id else ''
     params = (user_id,) if user_id else ()
+    # Cartas owned más de 6 meses sin vender, excluyendo colección personal
     c.execute(f'''
         SELECT COUNT(*) as count FROM cards
         WHERE status='owned'
@@ -408,6 +410,7 @@ def get_profit_by_period(user_id=None):
         'all':     query("'1900-01-01'"),
     }
 
+    # Beneficio por mes (últimos 12 meses)
     c.execute(f'''
         SELECT
             strftime('%Y-%m', sale_date) as month,
@@ -492,3 +495,72 @@ def get_trade(trade_id, user_id=None):
     trade['cards'] = [dict(r) for r in c.fetchall()]
     conn.close()
     return trade
+
+
+def get_portfolio_summary(user_id=None):
+    conn = get_db()
+    c = conn.cursor()
+    where = 'WHERE user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+
+    c.execute(f'''
+        SELECT
+            COUNT(*) as total_cards,
+            SUM(CASE WHEN status='owned' THEN 1 ELSE 0 END) as owned,
+            SUM(CASE WHEN status='sold' THEN 1 ELSE 0 END) as sold,
+            SUM(CASE WHEN graded=1 AND status='owned' THEN 1 ELSE 0 END) as graded_owned,
+            SUM(CASE WHEN status='owned' THEN COALESCE(purchase_price,0) ELSE 0 END) as total_cost,
+            SUM(CASE WHEN status='owned' THEN COALESCE(market_price, purchase_price, 0) ELSE 0 END) as current_value,
+            SUM(CASE WHEN status='sold' THEN COALESCE(sale_price,0) - COALESCE(purchase_price,0) ELSE 0 END) as realized_profit,
+            SUM(CASE WHEN status='owned' AND market_price IS NOT NULL THEN market_price - COALESCE(purchase_price,0) ELSE 0 END) as unrealized_gain,
+            COUNT(CASE WHEN status='owned' AND market_price IS NOT NULL THEN 1 END) as cards_with_price
+        FROM cards {where}
+    ''', params)
+    summary = dict(c.fetchone())
+
+    # Top 5 cartas por valor de mercado
+    c.execute(f'''
+        SELECT id, player, year, set_name, grading_company, grade,
+               purchase_price, market_price, photo_front,
+               COALESCE(market_price, purchase_price, 0) as value,
+               COALESCE(market_price, purchase_price, 0) - COALESCE(purchase_price, 0) as gain
+        FROM cards WHERE status='owned' {'AND user_id=?' if user_id else ''}
+        ORDER BY value DESC LIMIT 5
+    ''', params)
+    summary['top_by_value'] = [dict(r) for r in c.fetchall()]
+
+    # Top 5 por ganancia latente
+    c.execute(f'''
+        SELECT id, player, year, set_name, grading_company, grade,
+               purchase_price, market_price, photo_front,
+               market_price - COALESCE(purchase_price, 0) as gain
+        FROM cards WHERE status='owned' AND market_price IS NOT NULL AND purchase_price IS NOT NULL
+        {'AND user_id=?' if user_id else ''}
+        ORDER BY gain DESC LIMIT 5
+    ''', params)
+    summary['top_by_gain'] = [dict(r) for r in c.fetchall()]
+
+    # Distribución por deporte
+    c.execute(f'''
+        SELECT sport, COUNT(*) as n,
+               SUM(COALESCE(market_price, purchase_price, 0)) as value
+        FROM cards WHERE status='owned' AND sport IS NOT NULL {('AND user_id=?' if user_id else '')}
+        GROUP BY sport ORDER BY n DESC
+    ''', params)
+    summary['by_sport'] = [dict(r) for r in c.fetchall()]
+
+    # Valor mensual acumulado en ventas (últimos 12 meses)
+    c.execute(f'''
+        SELECT strftime('%Y-%m', sale_date) as month,
+               SUM(sale_price) as revenue,
+               SUM(sale_price - COALESCE(purchase_price,0)) as profit,
+               COUNT(*) as sold
+        FROM cards WHERE status='sold' AND sale_date IS NOT NULL
+        AND sale_date >= date('now', '-12 months')
+        {('AND user_id=?' if user_id else '')}
+        GROUP BY month ORDER BY month ASC
+    ''', params)
+    summary['monthly_sales'] = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return summary

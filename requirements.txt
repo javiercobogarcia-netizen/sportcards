@@ -7,3 +7,4 @@ requests==2.32.3
 qrcode[pil]==7.4.2
 openpyxl==3.1.5
 Pillow==10.4.0
+fpdf2==2.7.9
