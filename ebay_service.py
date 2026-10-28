@@ -1,8 +1,10 @@
 import requests
 import os
+import re
 from datetime import datetime
 
-EBAY_API_URL = 'https://api.ebay.com/buy/browse/v1/item_summary/search'
+FINDING_API_URL = 'https://svcs.ebay.com/services/search/FindingService/v1'
+
 
 def get_ebay_token():
     app_id = os.getenv('EBAY_APP_ID')
@@ -19,69 +21,93 @@ def get_ebay_token():
             'Authorization': f'Basic {encoded}',
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        data='grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope'
+        data='grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope',
+        timeout=8
     )
     if response.status_code == 200:
         return response.json().get('access_token')
     return None
 
-def search_card_price(player, year, set_name, numbering=None, grading_company=None, grade=None):
-    token = get_ebay_token()
-    if not token:
-        return None, 'eBay no configurado'
 
-    parts = [str(year) if year else '', player, set_name or '']
+def _build_query(player, year, set_name, numbering=None, grading_company=None, grade=None):
+    parts = [player]
+    year_str = str(year) if year else ''
+    short_set = re.sub(r'^\d{4}(-\d{2})?\s+', '', set_name or '').strip()
+    if year_str:
+        parts.insert(0, year_str)
+    if short_set:
+        parts.append(short_set)
     if numbering:
         parts.append(numbering)
     if grading_company and grade:
         parts.append(f'{grading_company} {grade}')
+    return ' '.join(p for p in parts if p).strip()
 
-    query = ' '.join(p for p in parts if p).strip()
+
+def _fetch_sold_items(query, app_id, limit=10):
+    params = {
+        'OPERATION-NAME': 'findCompletedItems',
+        'SERVICE-VERSION': '1.0.0',
+        'SECURITY-APPNAME': app_id,
+        'RESPONSE-DATA-FORMAT': 'JSON',
+        'keywords': query,
+        'categoryId': '212',
+        'itemFilter(0).name': 'SoldItemsOnly',
+        'itemFilter(0).value': 'true',
+        'sortOrder': 'EndTimeSoonest',
+        'paginationInput.entriesPerPage': str(limit),
+    }
+    response = requests.get(FINDING_API_URL, params=params, timeout=8)
+    if response.status_code != 200:
+        return None, f'eBay error {response.status_code}'
+
+    data = response.json()
+    search_result = data.get('findCompletedItemsResponse', [{}])[0]
+    ack = search_result.get('ack', [''])[0]
+    if ack != 'Success':
+        return None, 'Sin resultados'
+
+    raw_items = search_result.get('searchResult', [{}])[0].get('item', [])
+    return raw_items, None
+
+
+def search_card_price(player, year, set_name, numbering=None, grading_company=None, grade=None):
+    app_id = os.getenv('EBAY_APP_ID')
+    if not app_id or app_id == 'TU_EBAY_APP_ID_AQUI':
+        return None, 'eBay no configurado'
+
+    query = _build_query(player, year, set_name, numbering, grading_company, grade)
 
     try:
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'X-EBAY-C-MARKETPLACE-ID': 'EBAY_ES',
-            'Content-Type': 'application/json'
-        }
-        params = {
-            'q': query,
-            'category_ids': '212',
-            'filter': 'buyingOptions:{FIXED_PRICE}',
-            'sort': 'price',
-            'limit': 10
-        }
-        response = requests.get(EBAY_API_URL, headers=headers, params=params)
-
-        if response.status_code != 200:
-            headers['X-EBAY-C-MARKETPLACE-ID'] = 'EBAY_US'
-            response = requests.get(EBAY_API_URL, headers=headers, params=params)
-
-        if response.status_code != 200:
-            return None, f'eBay error: {response.status_code}'
-
-        data = response.json()
-        items = data.get('itemSummaries', [])
-
-        if not items:
-            return None, 'Sin resultados en eBay'
+        raw_items, error = _fetch_sold_items(query, app_id, limit=12)
+        if error:
+            return None, error
+        if not raw_items:
+            return None, 'Sin ventas recientes en eBay'
 
         prices = []
-        for item in items[:5]:
-            price = item.get('price', {})
-            value = price.get('value')
-            if value:
-                prices.append(float(value))
+        for item in raw_items:
+            selling = item.get('sellingStatus', [{}])[0]
+            sold_price = selling.get('convertedCurrentPrice', [{}])[0]
+            price_val = sold_price.get('__value__')
+            if price_val:
+                prices.append(float(price_val))
 
         if not prices:
             return None, 'Sin precios disponibles'
 
-        avg = sum(prices) / len(prices)
+        prices.sort()
+        n = len(prices)
+        if n % 2 == 1:
+            median = prices[n // 2]
+        else:
+            median = (prices[n // 2 - 1] + prices[n // 2]) / 2
+
         return {
-            'average': round(avg, 2),
+            'average': round(median, 2),
             'min': round(min(prices), 2),
             'max': round(max(prices), 2),
-            'samples': len(prices),
+            'samples': n,
             'query': query,
             'updated': datetime.now().strftime('%Y-%m-%d %H:%M')
         }, None
@@ -89,46 +115,21 @@ def search_card_price(player, year, set_name, numbering=None, grading_company=No
     except Exception as e:
         return None, str(e)
 
+
 def get_recent_sales(player, year=None, set_name=None, numbering=None, grading_company=None, grade=None, limit=8):
     app_id = os.getenv('EBAY_APP_ID')
     if not app_id or app_id == 'TU_EBAY_APP_ID_AQUI':
         return None, 'eBay no configurado'
 
-    parts = [str(year) if year else '', player, set_name or '']
-    if numbering:
-        parts.append(numbering)
-    if grading_company and grade:
-        parts.append(f'{grading_company} {grade}')
-    query = ' '.join(p for p in parts if p).strip()
+    query = _build_query(player, year, set_name, numbering, grading_company, grade)
 
     try:
-        params = {
-            'OPERATION-NAME': 'findCompletedItems',
-            'SERVICE-VERSION': '1.0.0',
-            'SECURITY-APPNAME': app_id,
-            'RESPONSE-DATA-FORMAT': 'JSON',
-            'keywords': query,
-            'categoryId': '212',
-            'itemFilter(0).name': 'SoldItemsOnly',
-            'itemFilter(0).value': 'true',
-            'sortOrder': 'EndTimeSoonest',
-            'paginationInput.entriesPerPage': str(limit),
-        }
-        response = requests.get(
-            'https://svcs.ebay.com/services/search/FindingService/v1',
-            params=params,
-            timeout=8
-        )
-        if response.status_code != 200:
-            return None, f'eBay error {response.status_code}'
+        raw_items, error = _fetch_sold_items(query, app_id, limit=limit)
+        if error:
+            return None, error
+        if not raw_items:
+            return None, 'Sin ventas recientes'
 
-        data = response.json()
-        search_result = data.get('findCompletedItemsResponse', [{}])[0]
-        ack = search_result.get('ack', [''])[0]
-        if ack != 'Success':
-            return None, 'Sin resultados'
-
-        raw_items = search_result.get('searchResult', [{}])[0].get('item', [])
         sales = []
         for item in raw_items:
             selling = item.get('sellingStatus', [{}])[0]
@@ -147,8 +148,10 @@ def get_recent_sales(player, year=None, set_name=None, numbering=None, grading_c
                     'date': date_str,
                     'url': url,
                 })
+
         if not sales:
             return None, 'Sin ventas recientes'
         return {'sales': sales, 'query': query}, None
+
     except Exception as e:
         return None, str(e)
