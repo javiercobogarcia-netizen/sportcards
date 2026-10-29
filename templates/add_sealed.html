@@ -17,20 +17,43 @@
 </div>
 
 <div class="container">
-<form method="POST" enctype="multipart/form-data">
+
+<!-- Estado de identificación IA -->
+<div id="ai-status" style="display:none;padding:12px;border-radius:10px;margin-bottom:16px;font-size:14px;text-align:center"></div>
+
+<form method="POST" enctype="multipart/form-data" id="add-form">
+
+  <!-- Sección foto + IA (primero, igual que en añadir carta) -->
+  <div class="form-section">
+    <h2>📸 Foto e identificación</h2>
+
+    <div class="form-group">
+      <label for="photo-input" class="photo-area" id="photo-label">
+        <div class="photo-icon">📷</div>
+        <div class="photo-label">Toca para fotografiar el producto</div>
+      </label>
+      <input type="file" name="photo" id="photo-input" accept="image/*" capture="environment"
+        style="display:none" onchange="onPhotoSelected(this)">
+    </div>
+
+    <button type="button" id="ai-btn" class="btn btn-primary" style="display:none;margin-top:8px"
+      onclick="identifyWithAI()">
+      🤖 Identificar con IA
+    </button>
+  </div>
 
   <div class="form-section">
     <h2>📦 Producto</h2>
 
     <div class="form-group">
       <label>Nombre *</label>
-      <input type="text" name="name" placeholder="Ej: 2024 Topps Chrome Hobby Box" required>
+      <input type="text" name="name" id="f-name" placeholder="Ej: 2024 Topps Chrome Hobby Box" required>
     </div>
 
     <div class="form-row">
       <div class="form-group">
         <label>Tipo</label>
-        <select name="product_type">
+        <select name="product_type" id="f-type">
           <option value="hobby_box">Hobby Box</option>
           <option value="blaster">Blaster Box</option>
           <option value="fat_pack">Fat Pack</option>
@@ -44,13 +67,15 @@
       </div>
       <div class="form-group">
         <label>Deporte</label>
-        <select name="sport">
+        <select name="sport" id="f-sport">
           <option value="">— Seleccionar —</option>
           <option value="fútbol">Fútbol</option>
           <option value="baloncesto">Baloncesto</option>
           <option value="béisbol">Béisbol</option>
           <option value="fútbol americano">Fútbol americano</option>
           <option value="hockey">Hockey</option>
+          <option value="golf">Golf</option>
+          <option value="pokemon">Pokémon</option>
           <option value="otro">Otro</option>
         </select>
       </div>
@@ -59,11 +84,11 @@
     <div class="form-row">
       <div class="form-group">
         <label>Año</label>
-        <input type="number" name="year" placeholder="2024" min="1990" max="2030">
+        <input type="number" name="year" id="f-year" placeholder="2024" min="1990" max="2030">
       </div>
       <div class="form-group">
         <label>Marca</label>
-        <input type="text" name="brand" placeholder="Topps, Panini...">
+        <input type="text" name="brand" id="f-brand" placeholder="Topps, Panini...">
       </div>
     </div>
 
@@ -87,46 +112,92 @@
     </div>
     <div class="form-group">
       <label>Fecha de compra</label>
-      <input type="date" name="purchase_date" value="{{ today }}">
-    </div>
-  </div>
-
-  <div class="form-section">
-    <h2>📸 Foto</h2>
-    <div class="form-group">
-      <label for="photo-input" class="photo-area" id="photo-label">
-        <div class="photo-icon">📷</div>
-        <div class="photo-label">Toca para añadir foto</div>
-      </label>
-      <input type="file" name="photo" id="photo-input" accept="image/*" capture="environment" style="display:none"
-        onchange="previewPhoto(this)">
+      <input type="date" name="purchase_date" id="f-date">
     </div>
   </div>
 
   <div class="form-section">
     <h2>📝 Notas</h2>
     <div class="form-group">
-      <textarea name="notes" rows="3" placeholder="Notas adicionales..."></textarea>
+      <textarea name="notes" id="f-notes" rows="3" placeholder="Notas adicionales..."></textarea>
     </div>
   </div>
+
+  <!-- Campo oculto para foto ya subida por IA -->
+  <input type="hidden" name="photo_identified" id="photo-identified" value="">
 
   <button type="submit" class="btn btn-primary">Guardar sellado</button>
 </form>
 </div>
 
 <script>
-function previewPhoto(input) {
+document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+
+let selectedFile = null;
+
+function onPhotoSelected(input) {
   if (input.files && input.files[0]) {
+    selectedFile = input.files[0];
     const reader = new FileReader();
     reader.onload = e => {
       const label = document.getElementById('photo-label');
       label.innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px">`;
       label.classList.add('has-photo');
     };
-    reader.readAsDataURL(input.files[0]);
+    reader.readAsDataURL(selectedFile);
+    document.getElementById('ai-btn').style.display = '';
+    setStatus('Foto seleccionada. Pulsa "Identificar con IA" para autorellenar.', '#f59e0b');
   }
 }
-document.querySelector('input[name="purchase_date"]').value = new Date().toISOString().split('T')[0];
+
+function setStatus(msg, color) {
+  const el = document.getElementById('ai-status');
+  el.textContent = msg;
+  el.style.display = '';
+  el.style.background = color + '22';
+  el.style.color = color;
+  el.style.border = '1px solid ' + color + '44';
+}
+
+async function identifyWithAI() {
+  if (!selectedFile) return;
+  const btn = document.getElementById('ai-btn');
+  btn.disabled = true;
+  btn.textContent = '🤖 Identificando...';
+  setStatus('Enviando foto a Gemini IA...', '#60a5fa');
+
+  const fd = new FormData();
+  fd.append('photo', selectedFile);
+
+  try {
+    const r = await fetch('/api/identify-sealed', { method: 'POST', body: fd });
+    const data = await r.json();
+
+    if (data.error) {
+      setStatus('Error: ' + data.error, '#f87171');
+      btn.disabled = false;
+      btn.textContent = '🤖 Identificar con IA';
+      return;
+    }
+
+    // Autorellenar campos
+    if (data.name)         document.getElementById('f-name').value  = data.name;
+    if (data.product_type) document.getElementById('f-type').value  = data.product_type;
+    if (data.sport)        document.getElementById('f-sport').value = data.sport;
+    if (data.year)         document.getElementById('f-year').value  = data.year;
+    if (data.brand)        document.getElementById('f-brand').value = data.brand;
+    if (data.notes)        document.getElementById('f-notes').value = data.notes;
+    if (data.photo)        document.getElementById('photo-identified').value = data.photo;
+
+    setStatus('✅ Identificado: ' + (data.name || 'producto sellado'), '#4ade80');
+    btn.textContent = '🤖 Re-identificar';
+    btn.disabled = false;
+  } catch(e) {
+    setStatus('Error de conexión', '#f87171');
+    btn.disabled = false;
+    btn.textContent = '🤖 Identificar con IA';
+  }
+}
 </script>
 </body>
 </html>
