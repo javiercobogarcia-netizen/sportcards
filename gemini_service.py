@@ -98,3 +98,58 @@ Responde ÚNICAMENTE con el JSON."""
                 time.sleep(5)
 
     return None, str(last_error)
+
+
+def identify_sealed(photo_path):
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key or api_key == 'TU_CLAVE_AQUI':
+        return None, 'API key de Gemini no configurada'
+
+    client = genai.Client(api_key=api_key)
+
+    prompt = """Eres un experto en producto sellado de cartas coleccionables (trading cards): hobby boxes, blaster boxes, fat packs, collector boxes, mega boxes, hanger boxes, tins, cases, etc. de marcas como Topps, Panini, Upper Deck, Bowman, Select, Prizm, Optic, Chronicles, Immaculate, National Treasures, Leaf, Donruss, Fleer, Score, y también productos de Pokémon TCG.
+
+Analiza esta imagen e identifica el producto sellado.
+
+Devuelve SOLO un JSON válido (sin texto, sin markdown):
+{
+  "name": "nombre completo del producto (ej: 2024 Topps Chrome Baseball Hobby Box)",
+  "product_type": "hobby_box|blaster|fat_pack|collector_box|mega_box|hanger|tin|case|other",
+  "sport": "fútbol|baloncesto|béisbol|fútbol americano|hockey|golf|pokemon|otro",
+  "year": 2024,
+  "brand": "Topps|Panini|Upper Deck|Bowman|etc",
+  "notes": "detalles relevantes: número de packs por caja, autos garantizados, edición especial, etc."
+}
+
+Responde ÚNICAMENTE con el JSON."""
+
+    try:
+        with open(photo_path, 'rb') as f:
+            photo_bytes = f.read()
+    except Exception as e:
+        return None, f'Error leyendo foto: {e}'
+
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=[prompt, types.Part.from_bytes(data=photo_bytes, mime_type='image/jpeg')],
+            )
+            raw = response.text.strip()
+            if raw.startswith('```'):
+                raw = raw.split('```')[1]
+                if raw.startswith('json'):
+                    raw = raw[4:]
+                raw = raw.strip()
+            data = json.loads(raw)
+            return data, None
+        except json.JSONDecodeError:
+            return {'gemini_raw': response.text, 'name': '', 'product_type': 'other',
+                    'sport': None, 'year': None, 'brand': None, 'notes': None}, None
+        except Exception as e:
+            last_error = e
+            if attempt < 2:
+                time.sleep(5)
+
+    return None, str(last_error)
