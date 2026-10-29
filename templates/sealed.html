@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111111">
+<title>Sellados — SportCards</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<div class="nav">
+  <a href="/" class="nav-back">‹</a>
+  <h1>Producto sellado</h1>
+  <a href="/sealed/add" style="color:white;font-size:24px;text-decoration:none">＋</a>
+</div>
+
+<div class="coll-stats">
+  <div class="coll-stat">
+    <div class="coll-stat-val" id="stat-count">—</div>
+    <div class="coll-stat-lbl">Unidades</div>
+  </div>
+  <div class="coll-stat">
+    <div class="coll-stat-val blue" id="stat-value">—</div>
+    <div class="coll-stat-lbl">Invertido</div>
+  </div>
+  <div class="coll-stat">
+    <div class="coll-stat-val" id="stat-roi">—</div>
+    <div class="coll-stat-lbl">ROI</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="setFilter(this,'')">Todos</button>
+    <button class="filter-tab" onclick="setFilter(this,'sealed')">Sellados</button>
+    <button class="filter-tab" onclick="setFilter(this,'opened')">Abiertos</button>
+    <button class="filter-tab" onclick="setFilter(this,'sold')">Vendidos</button>
+  </div>
+
+  <div id="items-list"></div>
+
+</div>
+
+<nav class="bottom-nav">
+  <a href="/"><span>🏠</span><span>Inicio</span></a>
+  <a href="/collection"><span>📚</span><span>Colección</span></a>
+  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
+  <a href="/sealed" class="active"><span>📦</span><span>Sellados</span></a>
+  <a href="/stats"><span>📈</span><span>Stats</span></a>
+</nav>
+
+<script>
+let currentStatus = '';
+
+const TYPE_LABELS = {
+  hobby_box: 'Hobby Box', blaster: 'Blaster Box', fat_pack: 'Fat Pack',
+  collector_box: 'Collector Box', tin: 'Tin', mega_box: 'Mega Box',
+  hanger: 'Hanger Box', case: 'Case', other: 'Otro'
+};
+const STATUS_LABELS = { sealed: 'Sellado', opened: 'Abierto', sold: 'Vendido' };
+const STATUS_COLORS = { sealed: '#4ade80', opened: '#f59e0b', sold: '#60a5fa' };
+
+function setFilter(btn, status) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentStatus = status;
+  loadItems();
+}
+
+async function loadStats() {
+  const r = await fetch('/api/sealed/stats');
+  const s = await r.json();
+  document.getElementById('stat-count').textContent = s.sealed_count || 0;
+  const val = s.current_value || 0;
+  document.getElementById('stat-value').textContent = '€' + Math.round(val).toLocaleString('es');
+  const invested = s.total_invested || 0;
+  const roiEl = document.getElementById('stat-roi');
+  if (invested > 0) {
+    const roi = ((val - invested) / invested * 100);
+    roiEl.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%';
+    roiEl.className = 'coll-stat-val ' + (roi >= 0 ? 'green' : 'red');
+  } else {
+    roiEl.textContent = '—';
+    roiEl.className = 'coll-stat-val';
+  }
+}
+
+async function loadItems() {
+  const params = new URLSearchParams();
+  if (currentStatus) params.append('status', currentStatus);
+  const r = await fetch('/api/sealed?' + params);
+  const items = await r.json();
+  const container = document.getElementById('items-list');
+  if (!items.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📦</div><p>No hay producto sellado.</p><a href="/sealed/add" class="btn btn-primary" style="max-width:220px;margin:0 auto">Añadir caja</a></div>`;
+    return;
+  }
+  container.innerHTML = items.map(item => {
+    const photo = item.photo
+      ? `<img style="width:54px;height:72px;object-fit:cover;border-radius:8px;flex-shrink:0" src="/${item.photo}" loading="lazy">`
+      : `<div style="width:54px;height:72px;border-radius:8px;background:#222;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:1px solid #333">📦</div>`;
+    const typeLabel = TYPE_LABELS[item.product_type] || item.product_type || '';
+    const statusColor = STATUS_COLORS[item.status] || '#888';
+    const statusLabel = STATUS_LABELS[item.status] || item.status;
+    const qty = item.quantity > 1 ? ` ×${item.quantity}` : '';
+
+    let priceHtml = '';
+    if (item.status === 'sold' && item.sale_price && item.purchase_price) {
+      const profit = (item.sale_price - item.purchase_price) * (item.quantity || 1);
+      const roi = ((item.sale_price - item.purchase_price) / item.purchase_price * 100).toFixed(1);
+      priceHtml = `<div class="card-price">Vendido: ${item.sale_price.toFixed(2)}€ <span class="${profit>=0?'roi-positive':'roi-negative'}">(${profit>=0?'+':''}${profit.toFixed(2)}€ / ${roi}%)</span></div>`;
+    } else {
+      const market = item.market_price ? ` · Mercado: ${item.market_price.toFixed(2)}€` : '';
+      priceHtml = `<div class="card-price">Compra: ${item.purchase_price ? item.purchase_price.toFixed(2)+'€' : '—'}${market}</div>`;
+    }
+
+    return `<a href="/sealed/${item.id}" class="card-item">
+      ${photo}
+      <div class="card-info">
+        <div class="card-player">${item.name}${qty}</div>
+        <div class="card-meta">${[item.year, item.brand, typeLabel].filter(Boolean).join(' · ')}</div>
+        <div style="margin-bottom:4px">
+          <span class="badge" style="background:${statusColor}22;color:${statusColor}">${statusLabel}</span>
+          ${item.sport ? `<span class="badge badge-graded">${item.sport}</span>` : ''}
+        </div>
+        ${priceHtml}
+      </div>
+      <span style="color:#3a3a3a;font-size:20px">›</span>
+    </a>`;
+  }).join('');
+}
+
+loadStats();
+loadItems();
+</script>
+</body>
+</html>
