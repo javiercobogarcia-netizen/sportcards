@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111111">
+<title>{{ item.name }} — SportCards</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+#lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; align-items:center; justify-content:center; }
+#lightbox.open { display:flex; }
+#lightbox img { max-width:95vw; max-height:90vh; object-fit:contain; border-radius:8px; }
+#lightbox-close { position:absolute; top:16px; right:16px; color:white; font-size:32px; cursor:pointer; background:none; border:none; }
+</style>
+</head>
+<body>
+
+<div id="lightbox" onclick="document.getElementById('lightbox').classList.remove('open');document.body.style.overflow=''">
+  <button id="lightbox-close">×</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div class="nav">
+  <a href="/sealed" class="nav-back">‹</a>
+  <h1 style="font-size:15px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.name }}</h1>
+  <button onclick="document.getElementById('edit-form').style.display='block';this.style.display='none'"
+    style="background:none;border:none;color:var(--gold);font-size:14px;font-weight:600;cursor:pointer">Editar</button>
+</div>
+
+<div class="container">
+
+{% if item.photo %}
+<div style="margin-bottom:16px;text-align:center">
+  <img src="/{{ item.photo }}" onclick="openLightbox()" style="max-width:100%;max-height:260px;object-fit:contain;border-radius:var(--radius);cursor:zoom-in">
+</div>
+{% endif %}
+
+{% set type_labels = {'hobby_box':'Hobby Box','blaster':'Blaster Box','fat_pack':'Fat Pack','collector_box':'Collector Box','mega_box':'Mega Box','hanger':'Hanger Box','tin':'Tin','case':'Case','other':'Otro'} %}
+{% set status_map = {'sealed':('Sellado','#4ade80'),'opened':('Abierto','#f59e0b'),'sold':('Vendido','#60a5fa')} %}
+{% set status_info = status_map.get(item.status, (item.status,'#888')) %}
+
+<div class="detail-section">
+  <h2>📦 Información</h2>
+  <div class="detail-row">
+    <span class="detail-label">Estado</span>
+    <span class="detail-value" style="color:{{ status_info[1] }}">{{ status_info[0] }}</span>
+  </div>
+  <div class="detail-row">
+    <span class="detail-label">Tipo</span>
+    <span class="detail-value">{{ type_labels.get(item.product_type, item.product_type or '—') }}</span>
+  </div>
+  {% if item.sport %}
+  <div class="detail-row">
+    <span class="detail-label">Deporte</span>
+    <span class="detail-value capitalize">{{ item.sport }}</span>
+  </div>
+  {% endif %}
+  {% if item.year %}
+  <div class="detail-row">
+    <span class="detail-label">Año</span>
+    <span class="detail-value">{{ item.year }}</span>
+  </div>
+  {% endif %}
+  {% if item.brand %}
+  <div class="detail-row">
+    <span class="detail-label">Marca</span>
+    <span class="detail-value">{{ item.brand }}</span>
+  </div>
+  {% endif %}
+  <div class="detail-row">
+    <span class="detail-label">Cantidad</span>
+    <span class="detail-value">{{ item.quantity or 1 }}</span>
+  </div>
+</div>
+
+<div class="detail-section">
+  <h2>💰 Precio</h2>
+  <div class="detail-row">
+    <span class="detail-label">Precio compra</span>
+    <span class="detail-value">{{ '%.2f €' % item.purchase_price if item.purchase_price else '—' }}</span>
+  </div>
+  {% if item.market_price %}
+  <div class="detail-row">
+    <span class="detail-label">Valor mercado</span>
+    <span class="detail-value" style="color:var(--gold)">{{ '%.2f €' % item.market_price }}</span>
+  </div>
+  {% endif %}
+  {% if item.purchase_price and item.market_price %}
+  {% set roi = (item.market_price - item.purchase_price) / item.purchase_price * 100 %}
+  <div class="detail-row">
+    <span class="detail-label">ROI latente</span>
+    <span class="detail-value {{ 'profit-positive' if roi >= 0 else 'profit-negative' }}">
+      {{ '+' if roi >= 0 else '' }}{{ '%.1f' % roi }}%
+    </span>
+  </div>
+  {% endif %}
+  {% if item.purchase_date %}
+  <div class="detail-row">
+    <span class="detail-label">Fecha compra</span>
+    <span class="detail-value">{{ item.purchase_date }}</span>
+  </div>
+  {% endif %}
+  {% if item.status == 'sold' and item.sale_price %}
+  <div class="detail-row">
+    <span class="detail-label">Precio venta</span>
+    <span class="detail-value" style="color:#4ade80">{{ '%.2f €' % item.sale_price }}</span>
+  </div>
+  {% if item.purchase_price %}
+  {% set profit = (item.sale_price - item.purchase_price) * (item.quantity or 1) %}
+  <div class="detail-row">
+    <span class="detail-label">Beneficio</span>
+    <span class="detail-value {{ 'profit-positive' if profit >= 0 else 'profit-negative' }}">
+      {{ '+' if profit >= 0 else '' }}{{ '%.2f €' % profit }}
+    </span>
+  </div>
+  {% endif %}
+  {% if item.sale_date %}
+  <div class="detail-row">
+    <span class="detail-label">Fecha venta</span>
+    <span class="detail-value">{{ item.sale_date }}</span>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+
+{% if item.notes %}
+<div class="detail-section">
+  <h2>📝 Notas</h2>
+  <p style="color:#aaa;font-size:14px;line-height:1.5">{{ item.notes }}</p>
+</div>
+{% endif %}
+
+<!-- Formulario de edición (oculto) -->
+<div id="edit-form" style="display:none">
+<form method="POST" action="/sealed/{{ item.id }}/edit" enctype="multipart/form-data">
+  <div class="form-section">
+    <h2>✏️ Editar</h2>
+    <div class="form-group">
+      <label>Nombre</label>
+      <input type="text" name="name" value="{{ item.name }}" required>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo</label>
+        <select name="product_type">
+          {% for val, lbl in [('hobby_box','Hobby Box'),('blaster','Blaster Box'),('fat_pack','Fat Pack'),('collector_box','Collector Box'),('mega_box','Mega Box'),('hanger','Hanger Box'),('tin','Tin'),('case','Case'),('other','Otro')] %}
+          <option value="{{ val }}" {{ 'selected' if item.product_type == val }}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select name="status">
+          <option value="sealed" {{ 'selected' if item.status == 'sealed' }}>Sellado</option>
+          <option value="opened" {{ 'selected' if item.status == 'opened' }}>Abierto</option>
+          <option value="sold" {{ 'selected' if item.status == 'sold' }}>Vendido</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Precio compra (€)</label>
+        <input type="number" name="purchase_price" step="0.01" value="{{ item.purchase_price or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Valor mercado (€)</label>
+        <input type="number" name="market_price" step="0.01" value="{{ item.market_price or '' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Precio venta (€)</label>
+        <input type="number" name="sale_price" step="0.01" value="{{ item.sale_price or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Fecha venta</label>
+        <input type="date" name="sale_date" value="{{ item.sale_date or '' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Foto</label>
+      <input type="file" name="photo" accept="image/*" capture="environment">
+    </div>
+    <div class="form-group">
+      <label>Notas</label>
+      <textarea name="notes" rows="2">{{ item.notes or '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+  </div>
+</form>
+</div>
+
+<form method="POST" action="/sealed/{{ item.id }}/delete" style="margin-top:8px"
+  onsubmit="return confirm('¿Eliminar este producto?')">
+  <button type="submit" class="btn btn-secondary" style="color:#f87171;border-color:#f87171">Eliminar</button>
+</form>
+
+</div>
+
+<nav class="bottom-nav">
+  <a href="/"><span>🏠</span><span>Inicio</span></a>
+  <a href="/collection"><span>📚</span><span>Colección</span></a>
+  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
+  <a href="/sealed" class="active"><span>📦</span><span>Sellados</span></a>
+  <a href="/stats"><span>📈</span><span>Stats</span></a>
+</nav>
+
+<script>
+function openLightbox() {
+  const src = document.querySelector('.container img').src;
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+});
+</script>
+</body>
+</html>
