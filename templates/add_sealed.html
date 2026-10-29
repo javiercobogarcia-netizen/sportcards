@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111111">
+<title>Añadir sellado — SportCards</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<div class="nav">
+  <a href="/sealed" class="nav-back">‹</a>
+  <h1>Añadir sellado</h1>
+  <span></span>
+</div>
+
+<div class="container">
+<form method="POST" enctype="multipart/form-data">
+
+  <div class="form-section">
+    <h2>📦 Producto</h2>
+
+    <div class="form-group">
+      <label>Nombre *</label>
+      <input type="text" name="name" placeholder="Ej: 2024 Topps Chrome Hobby Box" required>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo</label>
+        <select name="product_type">
+          <option value="hobby_box">Hobby Box</option>
+          <option value="blaster">Blaster Box</option>
+          <option value="fat_pack">Fat Pack</option>
+          <option value="collector_box">Collector Box</option>
+          <option value="mega_box">Mega Box</option>
+          <option value="hanger">Hanger Box</option>
+          <option value="tin">Tin</option>
+          <option value="case">Case</option>
+          <option value="other">Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Deporte</label>
+        <select name="sport">
+          <option value="">— Seleccionar —</option>
+          <option value="fútbol">Fútbol</option>
+          <option value="baloncesto">Baloncesto</option>
+          <option value="béisbol">Béisbol</option>
+          <option value="fútbol americano">Fútbol americano</option>
+          <option value="hockey">Hockey</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Año</label>
+        <input type="number" name="year" placeholder="2024" min="1990" max="2030">
+      </div>
+      <div class="form-group">
+        <label>Marca</label>
+        <input type="text" name="brand" placeholder="Topps, Panini...">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Cantidad</label>
+      <input type="number" name="quantity" value="1" min="1" max="999">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h2>💰 Precio</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Precio compra (€)</label>
+        <input type="number" name="purchase_price" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Valor mercado (€)</label>
+        <input type="number" name="market_price" placeholder="0.00" step="0.01" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Fecha de compra</label>
+      <input type="date" name="purchase_date" value="{{ today }}">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h2>📸 Foto</h2>
+    <div class="form-group">
+      <label for="photo-input" class="photo-area" id="photo-label">
+        <div class="photo-icon">📷</div>
+        <div class="photo-label">Toca para añadir foto</div>
+      </label>
+      <input type="file" name="photo" id="photo-input" accept="image/*" capture="environment" style="display:none"
+        onchange="previewPhoto(this)">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h2>📝 Notas</h2>
+    <div class="form-group">
+      <textarea name="notes" rows="3" placeholder="Notas adicionales..."></textarea>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Guardar sellado</button>
+</form>
+</div>
+
+<script>
+function previewPhoto(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const label = document.getElementById('photo-label');
+      label.innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px">`;
+      label.classList.add('has-photo');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+document.querySelector('input[name="purchase_date"]').value = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
