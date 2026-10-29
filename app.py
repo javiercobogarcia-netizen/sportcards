@@ -18,7 +18,7 @@ from database import (init_db as _init_db, get_stats, get_all_cards, get_card, c
                       get_portfolio_summary,
                       get_all_sealed, get_sealed, create_sealed, update_sealed,
                       delete_sealed, get_sealed_stats)
-from gemini_service import identify_card
+from gemini_service import identify_card, identify_sealed
 from ebay_service import search_card_price, get_recent_sales
 from qr_service import generate_qr
 from excel_service import export_collection
@@ -149,9 +149,13 @@ def sealed_page():
 def add_sealed_page():
     if request.method == 'POST':
         data = request.form.to_dict()
+        photo_identified = data.pop('photo_identified', None)
         photo_file = request.files.get('photo')
-        if photo_file and photo_file.filename and allowed_file(photo_file.filename, photo_file.content_type):
-            data['photo'] = save_photo(photo_file, 'sealed')
+        if photo_identified:
+            data['photo'] = photo_identified
+        elif photo_file and photo_file.filename and allowed_file(photo_file.filename, photo_file.content_type):
+            _, photo_rel = save_photo(photo_file, 'sealed')
+            data['photo'] = photo_rel
         if data.get('purchase_price'):
             data['purchase_price'] = float(data['purchase_price'])
         if data.get('market_price'):
@@ -204,6 +208,22 @@ def api_sealed():
 @login_required
 def api_sealed_stats():
     return jsonify(get_sealed_stats(user_id=current_user_id()))
+
+@app.route('/api/identify-sealed', methods=['POST'])
+@login_required
+def api_identify_sealed():
+    photo_file = request.files.get('photo')
+    if not photo_file:
+        return jsonify({'error': 'Foto requerida'}), 400
+    try:
+        photo_path, photo_rel = save_photo(photo_file, 'sealed')
+    except Exception as e:
+        return jsonify({'error': f'Error procesando foto: {str(e)}'}), 400
+    data, error = identify_sealed(photo_path)
+    if error:
+        return jsonify({'error': error}), 500
+    data['photo'] = photo_rel
+    return jsonify(data)
 
 @app.route('/trades')
 @login_required
