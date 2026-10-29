@@ -444,6 +444,136 @@ def get_profit_by_period(user_id=None):
     conn.close()
     return result
 
+# --- Producto Sellado ---
+
+def init_sealed_table():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS sealed_products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER DEFAULT 1,
+            name TEXT NOT NULL,
+            sport TEXT,
+            year INTEGER,
+            brand TEXT,
+            product_type TEXT DEFAULT 'hobby_box',
+            quantity INTEGER DEFAULT 1,
+            purchase_price REAL,
+            purchase_date TEXT,
+            sale_price REAL,
+            sale_date TEXT,
+            market_price REAL,
+            status TEXT DEFAULT 'sealed',
+            photo TEXT,
+            notes TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def get_all_sealed(user_id=None, status=None):
+    init_sealed_table()
+    conn = get_db()
+    c = conn.cursor()
+    query = 'SELECT * FROM sealed_products WHERE 1=1'
+    params = []
+    if user_id:
+        query += ' AND user_id = ?'
+        params.append(user_id)
+    if status:
+        query += ' AND status = ?'
+        params.append(status)
+    query += ' ORDER BY created_at DESC'
+    c.execute(query, params)
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_sealed(sealed_id, user_id=None):
+    init_sealed_table()
+    conn = get_db()
+    c = conn.cursor()
+    if user_id:
+        c.execute('SELECT * FROM sealed_products WHERE id=? AND user_id=?', (sealed_id, user_id))
+    else:
+        c.execute('SELECT * FROM sealed_products WHERE id=?', (sealed_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def create_sealed(data, user_id=1):
+    init_sealed_table()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO sealed_products
+        (user_id, name, sport, year, brand, product_type, quantity,
+         purchase_price, purchase_date, market_price, status, photo, notes)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    ''', (
+        user_id, data.get('name'), data.get('sport'), data.get('year'),
+        data.get('brand'), data.get('product_type', 'hobby_box'),
+        int(data.get('quantity') or 1),
+        data.get('purchase_price'), data.get('purchase_date'),
+        data.get('market_price'), data.get('status', 'sealed'),
+        data.get('photo'), data.get('notes')
+    ))
+    new_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return new_id
+
+def update_sealed(sealed_id, data):
+    init_sealed_table()
+    conn = get_db()
+    c = conn.cursor()
+    allowed = ['name','sport','year','brand','product_type','quantity',
+               'purchase_price','purchase_date','sale_price','sale_date',
+               'market_price','status','photo','notes']
+    fields = []
+    params = []
+    for field in allowed:
+        if field in data:
+            fields.append(f'{field} = ?')
+            params.append(data[field])
+    if not fields:
+        return
+    params.append(sealed_id)
+    c.execute(f'UPDATE sealed_products SET {", ".join(fields)} WHERE id = ?', params)
+    conn.commit()
+    conn.close()
+
+def delete_sealed(sealed_id):
+    init_sealed_table()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('DELETE FROM sealed_products WHERE id = ?', (sealed_id,))
+    conn.commit()
+    conn.close()
+
+def get_sealed_stats(user_id=None):
+    init_sealed_table()
+    conn = get_db()
+    c = conn.cursor()
+    where = 'WHERE user_id = ?' if user_id else ''
+    params = (user_id,) if user_id else ()
+    c.execute(f'''
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN status="sealed" THEN 1 ELSE 0 END) as sealed_count,
+            SUM(CASE WHEN status="sold" THEN 1 ELSE 0 END) as sold_count,
+            SUM(CASE WHEN status="sealed" THEN COALESCE(purchase_price,0)*COALESCE(quantity,1) ELSE 0 END) as total_invested,
+            SUM(CASE WHEN status="sealed" THEN COALESCE(market_price,purchase_price,0)*COALESCE(quantity,1) ELSE 0 END) as current_value,
+            SUM(CASE WHEN status="sold" THEN (sale_price - COALESCE(purchase_price,0))*COALESCE(quantity,1) ELSE 0 END) as profit
+        FROM sealed_products {where}
+    ''', params)
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else {}
+
 # --- Trades ---
 
 def create_trade(data, user_id=1):
