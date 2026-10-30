@@ -19,6 +19,7 @@ from database import (init_db as _init_db, get_stats, get_all_cards, get_card, c
                       get_all_sealed, get_sealed, create_sealed, update_sealed,
                       delete_sealed, get_sealed_stats)
 from gemini_service import identify_card, identify_sealed
+from database import sell_sealed_unit as db_sell_sealed_unit
 from ebay_service import search_card_price, get_recent_sales
 from qr_service import generate_qr
 from excel_service import export_collection
@@ -191,6 +192,16 @@ def edit_sealed(sealed_id):
     if data.get('year'):
         data['year'] = int(data['year'])
     update_sealed(sealed_id, data)
+    return redirect(f'/sealed/{sealed_id}')
+
+@app.route('/sealed/<int:sealed_id>/sell-unit', methods=['POST'])
+@login_required
+def sell_sealed_unit_route(sealed_id):
+    sale_price = request.form.get('sale_price')
+    sale_date  = request.form.get('sale_date') or None
+    if not sale_price:
+        return redirect(f'/sealed/{sealed_id}')
+    db_sell_sealed_unit(sealed_id, float(sale_price), sale_date)
     return redirect(f'/sealed/{sealed_id}')
 
 @app.route('/sealed/<int:sealed_id>/delete', methods=['POST'])
