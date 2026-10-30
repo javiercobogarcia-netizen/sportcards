@@ -160,6 +160,8 @@ def add_sealed_page():
             data['purchase_price'] = float(data['purchase_price'])
         if data.get('market_price'):
             data['market_price'] = float(data['market_price'])
+        if data.get('sale_price'):
+            data['sale_price'] = float(data['sale_price'])
         if data.get('year'):
             data['year'] = int(data['year'])
         new_id = create_sealed(data, user_id=current_user_id())
