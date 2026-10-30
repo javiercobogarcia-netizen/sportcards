@@ -105,7 +105,9 @@ async function loadItems() {
     const typeLabel = TYPE_LABELS[item.product_type] || item.product_type || '';
     const statusColor = STATUS_COLORS[item.status] || '#888';
     const statusLabel = STATUS_LABELS[item.status] || item.status;
-    const qty = item.quantity > 1 ? ` ×${item.quantity}` : '';
+    const qtySold = item.quantity_sold || 0;
+    const qtyAvail = (item.quantity || 1) - qtySold;
+    const qty = item.quantity > 1 ? ` <span style="color:#888;font-size:12px">(${qtyAvail}/${item.quantity} disp.)</span>` : '';
 
     let priceHtml = '';
     if (item.status === 'sold' && item.sale_price && item.purchase_price) {
