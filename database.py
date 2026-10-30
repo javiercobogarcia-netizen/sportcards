@@ -467,10 +467,17 @@ def init_sealed_table():
             status TEXT DEFAULT 'sealed',
             photo TEXT,
             notes TEXT,
+            quantity_sold INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
     ''')
+    # Migración: añadir columna si no existe
+    try:
+        conn.execute('ALTER TABLE sealed_products ADD COLUMN quantity_sold INTEGER DEFAULT 0')
+        conn.commit()
+    except Exception:
+        pass
     conn.commit()
     conn.close()
 
@@ -546,6 +553,33 @@ def update_sealed(sealed_id, data):
     conn.commit()
     conn.close()
 
+def sell_sealed_unit(sealed_id, sale_price, sale_date=None):
+    """Registra la venta de una unidad. Devuelve el item actualizado o None si no hay stock."""
+    init_sealed_table()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT quantity, quantity_sold FROM sealed_products WHERE id=?', (sealed_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return None
+    qty = row['quantity'] or 1
+    qty_sold = row['quantity_sold'] or 0
+    if qty_sold >= qty:
+        conn.close()
+        return None  # ya no queda stock
+    new_sold = qty_sold + 1
+    new_status = 'sold' if new_sold >= qty else 'opened'
+    c.execute('''UPDATE sealed_products
+                 SET quantity_sold=?, sale_price=?, sale_date=?, status=?
+                 WHERE id=?''',
+              (new_sold, float(sale_price), sale_date, new_status, sealed_id))
+    conn.commit()
+    c.execute('SELECT * FROM sealed_products WHERE id=?', (sealed_id,))
+    updated = c.fetchone()
+    conn.close()
+    return dict(updated) if updated else None
+
 def delete_sealed(sealed_id):
     init_sealed_table()
     conn = get_db()
@@ -560,14 +594,15 @@ def get_sealed_stats(user_id=None):
     c = conn.cursor()
     where = 'WHERE user_id = ?' if user_id else ''
     params = (user_id,) if user_id else ()
+    and_or = 'AND' if user_id else 'WHERE'
     c.execute(f'''
         SELECT
             COUNT(*) as total,
-            SUM(CASE WHEN status="sealed" THEN 1 ELSE 0 END) as sealed_count,
-            SUM(CASE WHEN status="sold" THEN 1 ELSE 0 END) as sold_count,
-            SUM(CASE WHEN status="sealed" THEN COALESCE(purchase_price,0)*COALESCE(quantity,1) ELSE 0 END) as total_invested,
-            SUM(CASE WHEN status="sealed" THEN COALESCE(market_price,purchase_price,0)*COALESCE(quantity,1) ELSE 0 END) as current_value,
-            SUM(CASE WHEN status="sold" THEN (sale_price - COALESCE(purchase_price,0))*COALESCE(quantity,1) ELSE 0 END) as profit
+            SUM(COALESCE(quantity,1) - COALESCE(quantity_sold,0)) as sealed_count,
+            SUM(COALESCE(quantity_sold,0)) as sold_count,
+            SUM(COALESCE(purchase_price,0) * COALESCE(quantity,1)) as total_invested,
+            SUM(COALESCE(market_price, purchase_price, 0) * (COALESCE(quantity,1) - COALESCE(quantity_sold,0))) as current_value,
+            SUM((COALESCE(sale_price,0) - COALESCE(purchase_price,0)) * COALESCE(quantity_sold,0)) as profit
         FROM sealed_products {where}
     ''', params)
     row = c.fetchone()
