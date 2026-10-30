@@ -68,11 +68,45 @@
     <span class="detail-value">{{ item.brand }}</span>
   </div>
   {% endif %}
+  {% set qty_total = item.quantity or 1 %}
+  {% set qty_sold = item.quantity_sold or 0 %}
+  {% set qty_avail = qty_total - qty_sold %}
   <div class="detail-row">
-    <span class="detail-label">Cantidad</span>
-    <span class="detail-value">{{ item.quantity or 1 }}</span>
+    <span class="detail-label">Cantidad total</span>
+    <span class="detail-value">{{ qty_total }}</span>
+  </div>
+  {% if qty_sold > 0 %}
+  <div class="detail-row">
+    <span class="detail-label">Vendidas</span>
+    <span class="detail-value" style="color:#60a5fa">{{ qty_sold }}</span>
+  </div>
+  {% endif %}
+  <div class="detail-row">
+    <span class="detail-label">Disponibles</span>
+    <span class="detail-value" style="color:{% if qty_avail > 0 %}#4ade80{% else %}#f87171{% endif %}">{{ qty_avail }}</span>
   </div>
 </div>
+
+{% if qty_avail > 0 %}
+<div class="detail-section">
+  <h2>💸 Vender unidad</h2>
+  <form method="POST" action="/sealed/{{ item.id }}/sell-unit">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Precio venta (€) *</label>
+        <input type="number" name="sale_price" step="0.01" min="0" placeholder="{{ '%.2f' % item.purchase_price if item.purchase_price else '0.00' }}" required>
+      </div>
+      <div class="form-group">
+        <label>Fecha venta</label>
+        <input type="date" name="sale_date" id="sell-date">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">
+      Registrar venta (quedan {{ qty_avail }})
+    </button>
+  </form>
+</div>
+{% endif %}
 
 <div class="detail-section">
   <h2>💰 Precio</h2>
@@ -207,6 +241,9 @@
 </nav>
 
 <script>
+const sellDate = document.getElementById('sell-date');
+if (sellDate) sellDate.value = new Date().toISOString().split('T')[0];
+
 function openLightbox() {
   const src = document.querySelector('.container img').src;
   document.getElementById('lightbox-img').src = src;
