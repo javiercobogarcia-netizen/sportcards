@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
-<title>Colección — SportCards</title>
+<title>Colecci√≥n ‚Äî SportCards</title>
 <link rel="stylesheet" href="/static/css/app.css">
 <style>
-/* ——— HEADER ——— */
+/* ‚Äî‚Äî‚Äî HEADER ‚Äî‚Äî‚Äî */
 .coll-header {
   position: sticky; top: 0; z-index: 50;
   background: #000; border-bottom: 1px solid #0d0d0d;
@@ -51,7 +51,7 @@
 }
 .coll-filter-btn.has-filters { color: #C9961A; }
 
-/* ——— CHIPS ——— */
+/* ‚Äî‚Äî‚Äî CHIPS ‚Äî‚Äî‚Äî */
 .coll-chips {
   display: flex; gap: 6px; padding: 0 14px 10px;
   overflow-x: auto; scrollbar-width: none;
@@ -65,7 +65,7 @@
 .coll-chip.on { background: #C9961A; color: #000; }
 .coll-chip.off { background: #171717; color: #555; }
 
-/* ——— STATS BAR ——— */
+/* ‚Äî‚Äî‚Äî STATS BAR ‚Äî‚Äî‚Äî */
 .coll-stats-bar {
   display: flex; border-bottom: 1px solid #0a0a0a; background: #050505;
 }
@@ -82,7 +82,7 @@
   text-transform: uppercase; letter-spacing: .5px;
 }
 
-/* ——— ADVANCED FILTERS ——— */
+/* ‚Äî‚Äî‚Äî ADVANCED FILTERS ‚Äî‚Äî‚Äî */
 .adv-filters {
   background: #0d0d0d; border-bottom: 1px solid #161616;
   padding: 12px 14px; display: none;
@@ -114,13 +114,13 @@
   padding: 6px 14px; cursor: pointer; font-weight: 600;
 }
 
-/* ——— RESULT LABEL ——— */
+/* ‚Äî‚Äî‚Äî RESULT LABEL ‚Äî‚Äî‚Äî */
 .result-label {
   font-size: 11px; color: #444; padding: 6px 14px 2px;
   text-transform: uppercase; letter-spacing: .4px;
 }
 
-/* ——— GRID VIEW ——— */
+/* ‚Äî‚Äî‚Äî GRID VIEW ‚Äî‚Äî‚Äî */
 .new-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
   gap: 5px; padding: 7px; background: #060606;
@@ -131,6 +131,7 @@
   transition: transform .1s;
 }
 .new-gc:active { transform: scale(.96); }
+.new-gc * { pointer-events: none; }
 .new-gc-img {
   aspect-ratio: 2.5/3.5; display: flex; align-items: center;
   justify-content: center; background: #141420;
@@ -156,7 +157,7 @@
 }
 .new-gc-price { font-size: 10px; margin-top: 1px; }
 
-/* ——— LIST VIEW ——— */
+/* ‚Äî‚Äî‚Äî LIST VIEW ‚Äî‚Äî‚Äî */
 .new-li {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 14px; border-bottom: 1px solid #0a0a0a;
@@ -186,7 +187,7 @@
 .new-li-price { font-size: 15px; font-weight: 800; color: #C9961A; }
 .new-li-roi { font-size: 11px; font-weight: 700; margin-top: 2px; }
 
-/* ——— SWIPE VIEW ——— */
+/* ‚Äî‚Äî‚Äî SWIPE VIEW ‚Äî‚Äî‚Äî */
 .swipe-wrap {
   display: flex; flex-direction: column;
   height: calc(100dvh - 190px); background: #050510;
@@ -278,12 +279,29 @@
   padding: 4px 0 6px; position: relative; z-index: 5;
 }
 
-/* ——— MODAL ——— */
-[�[[ݙ\�^H��][ێ��^Y�[��]���X��ܛ�[���ؘJ��
-N�Z[�^���\�^N��^��^Y\�X�[ێ���[[��\�Y�KX�۝[���^Y[���X�]N���[�\�Y]�[�Έ�ۙN�[��][ێ��X�]H���B��[�[[ݙ\�^K��[���X�]N�N��[�\�Y]�[�Έ[�B��[�[\�Y]�X��ܛ�[���LLLLN��ܙ\�\�Y]\Έ��Y[�ΈNN̜�\�^N��^��^Y\�X�[ێ���[[��\�L���[�ٛܛN��[��]VJ�
-N��[��][ێ��[�ٛܛH����X^ZZY��L���ݙ\����^N�]]��ݙ\��ܛ�X�Z]�[܎��۝Z[�B��[�[[ݙ\�^K��[��[�[\�Y]��[�ٛܛN��[��]VJ
-N�B��[�[]�\�^N��^��\�Y�KX�۝[���X�KX�]�Y[��[YۋZ][\Έ�^\�\�B��[�[\�X���۝\�^�N�L\���܎��MMN�X\��[�X���N�
-�B��[�[[�[YH��۝\�^�N�N��۝]�ZY�����܎�ٙ���]\�\�X�[�ΈK���B��[�[X���H�۝\�^�N�����܎�������X��ܛ�[���ۙN��ܙ\���ۙN�\��܎��inter; padding: 0 0 0 10px; line-height: 1; flex-shrink: 0;
+/* ‚Äî‚Äî‚Äî MODAL ‚Äî‚Äî‚Äî */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.78);
+  z-index: 200; display: flex; flex-direction: column;
+  justify-content: flex-end; opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-sheet {
+  background: #111118; border-radius: 24px 24px 0 0;
+  padding: 18px 18px 32px; display: flex; flex-direction: column;
+  gap: 13px; transform: translateY(30px); transition: transform .22s;
+  max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain;
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.modal-sub { font-size: 11px; color: #555; margin-bottom: 4px; }
+.modal-name { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+.modal-close {
+  font-size: 24px; color: #333; background: none; border: none;
+  cursor: pointer; padding: 0 0 0 10px; line-height: 1; flex-shrink: 0;
 }
 .modal-img-wrap {
   width: 100%; aspect-ratio: 2.5/3.5; border-radius: 16px;
@@ -322,7 +340,7 @@ N�B��[�[]�\�^N��^��\�Y�KX�۝[��
   cursor: pointer; text-decoration: none; display: block;
 }
 
-/* ——— EMPTY ——— */
+/* ‚Äî‚Äî‚Äî EMPTY ‚Äî‚Äî‚Äî */
 .coll-empty {
   display: flex; flex-direction: column; align-items: center;
   padding: 60px 24px; gap: 16px; text-align: center;
@@ -337,17 +355,17 @@ N�B��[�[]�\�^N��^��\�Y�KX�۝[��
 <div class="coll-header">
   <div class="coll-search-row">
     <div class="coll-search" id="search-wrap">
-      <span class="coll-search-ic">🔍</span>
+      <span class="coll-search-ic">üîç</span>
       <input type="text" id="search" placeholder="Buscar jugador, set, equipo..."
              oninput="onSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
-      <button class="coll-search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+      <button class="coll-search-clear" id="search-clear" onclick="clearSearch()">‚úï</button>
     </div>
     <div class="coll-view-sw">
-      <button class="coll-view-btn" id="btn-swipe" onclick="setView('swipe')" title="Swipe">🃏</button>
-      <button class="coll-view-btn" id="btn-grid"  onclick="setView('grid')"  title="Grid">⊞</button>
-      <button class="coll-view-btn" id="btn-list"  onclick="setView('list')"  title="Lista">☰</button>
+      <button class="coll-view-btn" id="btn-swipe" onclick="setView('swipe')" title="Swipe">üÉè</button>
+      <button class="coll-view-btn" id="btn-grid"  onclick="setView('grid')"  title="Grid">‚äû</button>
+      <button class="coll-view-btn" id="btn-list"  onclick="setView('list')"  title="Lista">‚ò∞</button>
     </div>
-    <button class="coll-filter-btn" id="filter-toggle-btn" onclick="toggleFilters()" title="Filtros avanzados">⚙️</button>
+    <button class="coll-filter-btn" id="filter-toggle-btn" onclick="toggleFilters()" title="Filtros avanzados">‚öôÔ∏è</button>
   </div>
   <div class="coll-chips" id="chips-row"></div>
 </div>
@@ -355,15 +373,15 @@ N�B��[�[]�\�^N��^��\�Y�KX�۝[��
 <!-- STATS BAR -->
 <div class="coll-stats-bar">
   <div class="coll-stat-item">
-    <div class="coll-stat-v gold" id="stat-count">—</div>
+    <div class="coll-stat-v gold" id="stat-count">‚Äî</div>
     <div class="coll-stat-l">Cartas</div>
   </div>
   <div class="coll-stat-item">
-    <div class="coll-stat-v b" id="stat-value">—</div>
+    <div class="coll-stat-v b" id="stat-value">‚Äî</div>
     <div class="coll-stat-l">Valor</div>
   </div>
   <div class="coll-stat-item">
-    <div class="coll-stat-v" id="stat-roi">—</div>
+    <div class="coll-stat-v" id="stat-roi">‚Äî</div>
     <div class="coll-stat-l">ROI</div>
   </div>
 </div>
@@ -372,7 +390,7 @@ N�B��[�[]�\�^N��^��\�Y�KX�۝[��
 <div class="adv-filters" id="adv-filters">
   <div class="adv-filter-row">
     <select id="f-sport" onchange="loadCards()"><option value="">Todos los deportes</option></select>
-    <select id="f-year"  onchange="loadCards()"><option value="">Todos los años</option></select>
+    <select id="f-year"  onchange="loadCards()"><option value="">Todos los a√±os</option></select>
   </div>
   <select id="f-set" onchange="loadCards()" class="adv-filter-full">
     <option value="">Todas las colecciones</option>
@@ -384,29 +402,29 @@ N�B��[�[]�\�^N��^��\�Y�KX�۝[��
       <option value="0">Solo sin gradar</option>
     </select>
     <select id="f-sort" onchange="loadCards()">
-      <option value="recent">Más recientes</option>
+      <option value="recent">M√°s recientes</option>
       <option value="player">Jugador A-Z</option>
-      <option value="price_desc">Precio compra ↓</option>
-      <option value="price_asc">Precio compra ↑</option>
-      <option value="market_desc">Valor mercado ↓</option>
-      <option value="profit_desc">Mayor beneficio ↓</option>
+      <option value="price_desc">Precio compra ‚Üì</option>
+      <option value="price_asc">Precio compra ‚Üë</option>
+      <option value="market_desc">Valor mercado ‚Üì</option>
+      <option value="profit_desc">Mayor beneficio ‚Üì</option>
     </select>
   </div>
   <div class="adv-filter-row">
     <div style="position:relative">
-      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px">€</span>
-      <input type="number" id="f-min-price" placeholder="Precio mín" min="0" step="1"
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px">‚Ç¨</span>
+      <input type="number" id="f-min-price" placeholder="Precio m√≠n" min="0" step="1"
              oninput="loadCards()" style="padding-left:24px">
     </div>
     <div style="position:relative">
-      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px">€</span>
-      <input type="number" id="f-max-price" placeholder="Precio máx" min="0" step="1"
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px">‚Ç¨</span>
+      <input type="number" id="f-max-price" placeholder="Precio m√°x" min="0" step="1"
              oninput="loadCards()" style="padding-left:24px">
     </div>
   </div>
   <div class="adv-filter-actions">
     <button class="adv-clear-btn" onclick="clearFilters()">Limpiar todo</button>
-    <button class="adv-apply-btn" onclick="toggleFilters()">Listo ✓</button>
+    <button class="adv-apply-btn" onclick="toggleFilters()">Listo ‚úì</button>
   </div>
 </div>
 
@@ -424,10 +442,10 @@ N�B��[�[]�\�^N��^��\�Y�KX�۝[��
         <div class="modal-sub" id="modal-sub"></div>
         <div class="modal-name" id="modal-name"></div>
       </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()">‚úï</button>
     </div>
     <div class="modal-img-wrap" id="modal-img-wrap">
-      <span class="modal-img-ph">🃏</span>
+      <span class="modal-img-ph">üÉè</span>
     </div>
     <div class="modal-prices" id="modal-prices"></div>
     <div class="modal-tags" id="modal-tags"></div>
@@ -437,14 +455,14 @@ N�B��[�[]�\�^N��^��\�Y�KX�۝[��
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
-  <a href="/"><span>🏠</span><span>Inicio</span></a>
-  <a href="/collection" class="active"><span>📚</span><span>Colección</span></a>
-  <a href="/add" class="add-btn"><span>➕</span><span>Añadir</span></a>
-  <a href="/stats"><span>📈</span><span>Stats</span></a>
+  <a href="/"><span>üè†</span><span>Inicio</span></a>
+  <a href="/collection" class="active"><span>üìö</span><span>Colecci√≥n</span></a>
+  <a href="/add" class="add-btn"><span>‚ûï</span><span>A√±adir</span></a>
+  <a href="/stats"><span>üìà</span><span>Stats</span></a>
 </nav>
 
 <script>
-/* ——— STATE ——— */
+/* ‚Äî‚Äî‚Äî STATE ‚Äî‚Äî‚Äî */
 let viewMode    = localStorage.getItem('coll-view') || 'grid';
 let chipStatus  = '';
 let chipSport   = '';
@@ -453,12 +471,12 @@ let allCards    = [];
 let swipeIndex  = 0;
 let swipeTouch  = null;
 
-/* ——— INIT ——— */
+/* ‚Äî‚Äî‚Äî INIT ‚Äî‚Äî‚Äî */
 loadFilterOptions();
 loadCards();
 updateViewBtns();
 
-/* ——— VIEW TOGGLE ——— */
+/* ‚Äî‚Äî‚Äî VIEW TOGGLE ‚Äî‚Äî‚Äî */
 function setView(v) {
   viewMode = v;
   localStorage.setItem('coll-view', v);
@@ -471,12 +489,12 @@ function updateViewBtns() {
   });
 }
 
-/* ——— CHIPS ——— */
+/* ‚Äî‚Äî‚Äî CHIPS ‚Äî‚Äî‚Äî */
 function buildChips(sports) {
   const row = document.getElementById('chips-row');
   const statuses = [
     {label:'Todas', val:''},
-    {label:'En posesión', val:'owned'},
+    {label:'En posesi√≥n', val:'owned'},
     {label:'Vendidas', val:'sold'},
   ];
   let html = statuses.map(s =>
@@ -504,7 +522,7 @@ function setChipSport(val) {
   loadCards();
 }
 
-/* ——— SEARCH ——— */
+/* ‚Äî‚Äî‚Äî SEARCH ‚Äî‚Äî‚Äî */
 function onSearch() {
   const val = document.getElementById('search').value;
   document.getElementById('search-clear').style.display = val ? 'block' : 'none';
@@ -518,7 +536,7 @@ function clearSearch() {
   loadCards();
 }
 
-/* ——— FILTERS ——— */
+/* ‚Äî‚Äî‚Äî FILTERS ‚Äî‚Äî‚Äî */
 function toggleFilters() {
   filtersOpen = !filtersOpen;
   document.getElementById('adv-filters').classList.toggle('open', filtersOpen);
@@ -534,7 +552,7 @@ function clearFilters() {
   loadCards();
 }
 
-/* ——— API ——— */
+/* ‚Äî‚Äî‚Äî API ‚Äî‚Äî‚Äî */
 async function loadFilterOptions() {
   try {
     const r   = await fetch('/api/filter-options');
@@ -581,20 +599,20 @@ async function loadCards() {
   renderCards(allCards);
 }
 
-/* ——— STATS ——— */
+/* ‚Äî‚Äî‚Äî STATS ‚Äî‚Äî‚Äî */
 function updateStats(cards) {
   document.getElementById('stat-count').textContent = cards.length;
   const owned    = cards.filter(c => c.status !== 'sold');
   const totalVal = owned.reduce((s, c) => s + (c.market_price || c.purchase_price || 0), 0);
   const totalBought = owned.reduce((s, c) => s + (c.purchase_price || 0), 0);
-  document.getElementById('stat-value').textContent = '€' + Math.round(totalVal).toLocaleString('es');
+  document.getElementById('stat-value').textContent = '‚Ç¨' + Math.round(totalVal).toLocaleString('es');
   const roiEl = document.getElementById('stat-roi');
   if (totalBought > 0) {
     const roi = ((totalVal - totalBought) / totalBought * 100);
     roiEl.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%';
     roiEl.className   = 'coll-stat-v ' + (roi >= 0 ? 'g' : 'r');
   } else {
-    roiEl.textContent = '—';
+    roiEl.textContent = '‚Äî';
     roiEl.className   = 'coll-stat-v';
   }
   const lbl = document.getElementById('result-label');
@@ -603,7 +621,7 @@ function updateStats(cards) {
     : '';
 }
 
-/* ——— RENDER HELPERS ——— */
+/* ‚Äî‚Äî‚Äî RENDER HELPERS ‚Äî‚Äî‚Äî */
 const GRADIENTS = [
   'linear-gradient(135deg,#1e3a7a,#0f2060)',
   'linear-gradient(135deg,#2d1b4e,#1a0f40)',
@@ -628,21 +646,21 @@ function roiCalc(c) {
   return null;
 }
 function displayPrice(c) {
-  if (c.status === 'sold' && c.sale_price) return '€' + c.sale_price.toFixed(2);
-  if (c.market_price) return '€' + c.market_price.toFixed(2);
-  if (c.purchase_price) return '€' + c.purchase_price.toFixed(2);
-  return '—';
+  if (c.status === 'sold' && c.sale_price) return '‚Ç¨' + c.sale_price.toFixed(2);
+  if (c.market_price) return '‚Ç¨' + c.market_price.toFixed(2);
+  if (c.purchase_price) return '‚Ç¨' + c.purchase_price.toFixed(2);
+  return '‚Äî';
 }
 
-/* ——— RENDER ——— */
+/* ‚Äî‚Äî‚Äî RENDER ‚Äî‚Äî‚Äî */
 function renderCards(cards) {
   const area = document.getElementById('cards-area');
   if (!cards.length) {
     const q = document.getElementById('search').value.trim();
     area.innerHTML = `<div class="coll-empty">
-      <div class="coll-empty-ic">🃏</div>
+      <div class="coll-empty-ic">üÉè</div>
       <div class="coll-empty-txt">No hay cartas${q ? ' para "'+q+'"' : ''}.</div>
-      <a href="/add" class="btn btn-primary" style="max-width:220px">Añadir carta</a>
+      <a href="/add" class="btn btn-primary" style="max-width:220px">A√±adir carta</a>
     </div>`;
     return;
   }
@@ -657,7 +675,7 @@ function renderGrid(cards) {
   area.innerHTML = `<div class="new-grid">${cards.map((c, i) => {
     const img = c.photo_front
       ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
-      : `<span class="new-gc-ph">🃏</span>`;
+      : `<span class="new-gc-ph">üÉè</span>`;
     const roi = roiCalc(c);
     const roiBadge = roi
       ? `<div class="new-gc-roi ${roi.pos?'p':'n'}">${roi.pos?'+':''}${roi.pct}%</div>`
@@ -685,7 +703,7 @@ function renderList(cards) {
   area.innerHTML = cards.map((c, i) => {
     const img = c.photo_front
       ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
-      : `<span class="new-li-ph">🃏</span>`;
+      : `<span class="new-li-ph">üÉè</span>`;
     const roi = roiCalc(c);
     const roiHtml = roi
       ? `<div class="new-li-roi" style="color:${roi.pos?'#4ade80':'#f87171'}">${roi.pos?'+':''}${roi.pct}%</div>`
@@ -699,7 +717,7 @@ function renderList(cards) {
       <div class="new-li-img" style="${c.photo_front?'':'background:'+gradient(i)}">${img}</div>
       <div class="new-li-info">
         <div class="new-li-player">${c.player}</div>
-        <div class="new-li-set">${[c.year,c.set_name].filter(Boolean).join(' · ')}</div>
+        <div class="new-li-set">${[c.year,c.set_name].filter(Boolean).join(' ¬∑ ')}</div>
         ${tags.length ? `<div class="new-li-tags">${tags.join('')}</div>` : ''}
       </div>
       <div class="new-li-right">
@@ -728,11 +746,11 @@ function renderSwipe(cards) {
 
   const cardImg = (card, idx) => card.photo_front
     ? `<img src="/${card.photo_front}" loading="lazy" alt="">`
-    : `<span class="swipe-cph">🃏</span>`;
+    : `<span class="swipe-cph">üÉè</span>`;
 
   const roi   = roiCalc(c);
   const price = displayPrice(c);
-  const buyStr = c.purchase_price ? '€'+c.purchase_price.toFixed(2) : '';
+  const buyStr = c.purchase_price ? '‚Ç¨'+c.purchase_price.toFixed(2) : '';
   const roiHtml = roi
     ? `<span class="swipe-roi${roi.pos?'':' neg'}">${roi.pos?'+':''}${roi.pct}%</span>`
     : '';
@@ -756,21 +774,21 @@ function renderSwipe(cards) {
           ${cardImg(next, swipeIndex+1)}
         </div></div>` : '<div class="swipe-side swipe-next"></div>'}
       <div class="swipe-nav">
-        ${swipeIndex > 0 ? `<button class="swipe-nav-btn" onclick="swipeGo(-1)">←</button>` : '<div></div>'}
-        ${swipeIndex < cards.length-1 ? `<button class="swipe-nav-btn" onclick="swipeGo(1)">→</button>` : '<div></div>'}
+        ${swipeIndex > 0 ? `<button class="swipe-nav-btn" onclick="swipeGo(-1)">‚Üê</button>` : '<div></div>'}
+        ${swipeIndex < cards.length-1 ? `<button class="swipe-nav-btn" onclick="swipeGo(1)">‚Üí</button>` : '<div></div>'}
       </div>
     </div>
     <div class="swipe-info">
       <div class="swipe-info-player">${c.player}</div>
-      <div class="swipe-info-set">${[c.year,c.set_name,c.team].filter(Boolean).join(' · ')}</div>
+      <div class="swipe-info-set">${[c.year,c.set_name,c.team].filter(Boolean).join(' ¬∑ ')}</div>
       <div class="swipe-info-row">
         ${buyStr ? `<span class="swipe-buy">${buyStr}</span>` : ''}
         <span class="swipe-mkt">${price}</span>
         ${roiHtml}
       </div>
       <div class="swipe-btns">
-        <a href="/card/${c.id}" class="swipe-edit">✏️ Editar</a>
-        <button class="swipe-sell" onclick="goSell(${c.id})">💰 Vender</button>
+        <a href="/card/${c.id}" class="swipe-edit">‚úèÔ∏è Editar</a>
+        <button class="swipe-sell" onclick="goSell(${c.id})">üí∞ Vender</button>
       </div>
     </div>
     <div class="swipe-counter">${swipeIndex+1} / ${cards.length}</div>
@@ -797,28 +815,28 @@ function initSwipeTouch() {
 
 function goSell(id) { window.location.href = '/card/'+id; }
 
-/* ——— MODAL ——— */
+/* ‚Äî‚Äî‚Äî MODAL ‚Äî‚Äî‚Äî */
 function openModal(idx) {
   const c = allCards[idx];
   if (!c) return;
   const overlay = document.getElementById('modal-overlay');
 
   document.getElementById('modal-sub').textContent =
-    [c.year, c.set_name, c.numbering ? '/'+String(c.numbering).replace(/^\/+/,'') : ''].filter(Boolean).join(' · ');
+    [c.year, c.set_name, c.numbering ? '/'+String(c.numbering).replace(/^\/+/,'') : ''].filter(Boolean).join(' ¬∑ ');
   document.getElementById('modal-name').textContent = c.player;
 
   const imgWrap = document.getElementById('modal-img-wrap');
   imgWrap.style.background = gradient(idx);
   imgWrap.innerHTML = c.photo_front
     ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
-    : `<span class="modal-img-ph">🃏</span>`;
+    : `<span class="modal-img-ph">üÉè</span>`;
 
   // Prices
   const roi = roiCalc(c);
   const pricesEl = document.getElementById('modal-prices');
-  const buyPrice  = c.purchase_price ? '€'+c.purchase_price.toFixed(2) : '—';
-  const mktPrice  = c.market_price   ? '€'+c.market_price.toFixed(2)   : (c.status==='sold'&&c.sale_price ? '€'+c.sale_price.toFixed(2) : '—');
-  const roiTxt    = roi ? (roi.pos?'+':'')+roi.pct+'%' : '—';
+  const buyPrice  = c.purchase_price ? '‚Ç¨'+c.purchase_price.toFixed(2) : '‚Äî';
+  const mktPrice  = c.market_price   ? '‚Ç¨'+c.market_price.toFixed(2)   : (c.status==='sold'&&c.sale_price ? '‚Ç¨'+c.sale_price.toFixed(2) : '‚Äî');
+  const roiTxt    = roi ? (roi.pos?'+':'')+roi.pct+'%' : '‚Äî';
   pricesEl.innerHTML = `
     <div class="modal-pb" style="background:#0d0d14">
       <div class="modal-pb-l" style="color:#555">Compra</div>
@@ -845,8 +863,8 @@ function openModal(idx) {
 
   // Buttons
   document.getElementById('modal-btns').innerHTML = `
-    <a href="/card/${c.id}" class="modal-edit">✏️ Editar</a>
-    <button class="modal-sell" onclick="goSell(${c.id})">💰 Vender</button>`;
+    <a href="/card/${c.id}" class="modal-edit">‚úèÔ∏è Editar</a>
+    <button class="modal-sell" onclick="goSell(${c.id})">üí∞ Vender</button>`;
 
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
