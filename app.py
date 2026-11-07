@@ -15,8 +15,11 @@ from database import (init_db as _init_db, get_stats, get_all_cards, get_card, c
                       get_stats_by_sport, get_top_cards, get_stats_by_player,
                       get_alerts, get_profit_by_period,
                       create_trade, get_trades, get_trade,
-                      get_portfolio_summary)
-from gemini_service import identify_card
+                      get_portfolio_summary,
+                      get_all_sealed, get_sealed, create_sealed, update_sealed,
+                      delete_sealed, get_sealed_stats)
+from gemini_service import identify_card, identify_sealed
+from database import sell_sealed_unit as db_sell_sealed_unit
 from ebay_service import search_card_price, get_recent_sales
 from qr_service import generate_qr
 from excel_service import export_collection
@@ -137,6 +140,104 @@ def card_detail(card_id):
 def stats_page():
     return render_template('stats.html', username=session.get('username'))
 
+@app.route('/sealed')
+@login_required
+def sealed_page():
+    return render_template('sealed.html')
+
+@app.route('/sealed/add', methods=['GET', 'POST'])
+@login_required
+def add_sealed_page():
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        photo_identified = data.pop('photo_identified', None)
+        photo_file = request.files.get('photo')
+        if photo_identified:
+            data['photo'] = photo_identified
+        elif photo_file and photo_file.filename and allowed_file(photo_file.filename, photo_file.content_type):
+            _, photo_rel = save_photo(photo_file, 'sealed')
+            data['photo'] = photo_rel
+        if data.get('purchase_price'):
+            data['purchase_price'] = float(data['purchase_price'])
+        if data.get('market_price'):
+            data['market_price'] = float(data['market_price'])
+        if data.get('sale_price'):
+            data['sale_price'] = float(data['sale_price'])
+        if data.get('year'):
+            data['year'] = int(data['year'])
+        new_id = create_sealed(data, user_id=current_user_id())
+        return redirect(f'/sealed/{new_id}')
+    return render_template('add_sealed.html')
+
+@app.route('/sealed/<int:sealed_id>')
+@login_required
+def sealed_detail_page(sealed_id):
+    item = get_sealed(sealed_id, user_id=current_user_id())
+    if not item:
+        return redirect('/sealed')
+    return render_template('sealed_detail.html', item=item)
+
+@app.route('/sealed/<int:sealed_id>/edit', methods=['POST'])
+@login_required
+def edit_sealed(sealed_id):
+    data = request.form.to_dict()
+    photo_file = request.files.get('photo')
+    if photo_file and photo_file.filename and allowed_file(photo_file.filename, photo_file.content_type):
+        data['photo'] = save_photo(photo_file, 'sealed')
+    for f in ['purchase_price', 'sale_price', 'market_price']:
+        if data.get(f):
+            data[f] = float(data[f])
+        elif f in data:
+            data[f] = None
+    if data.get('year'):
+        data['year'] = int(data['year'])
+    update_sealed(sealed_id, data)
+    return redirect(f'/sealed/{sealed_id}')
+
+@app.route('/sealed/<int:sealed_id>/sell-unit', methods=['POST'])
+@login_required
+def sell_sealed_unit_route(sealed_id):
+    sale_price = request.form.get('sale_price')
+    sale_date  = request.form.get('sale_date') or None
+    if not sale_price:
+        return redirect(f'/sealed/{sealed_id}')
+    db_sell_sealed_unit(sealed_id, float(sale_price), sale_date)
+    return redirect(f'/sealed/{sealed_id}')
+
+@app.route('/sealed/<int:sealed_id>/delete', methods=['POST'])
+@login_required
+def delete_sealed_item(sealed_id):
+    delete_sealed(sealed_id)
+    return redirect('/sealed')
+
+@app.route('/api/sealed')
+@login_required
+def api_sealed():
+    status = request.args.get('status')
+    items = get_all_sealed(user_id=current_user_id(), status=status or None)
+    return jsonify(items)
+
+@app.route('/api/sealed/stats')
+@login_required
+def api_sealed_stats():
+    return jsonify(get_sealed_stats(user_id=current_user_id()))
+
+@app.route('/api/identify-sealed', methods=['POST'])
+@login_required
+def api_identify_sealed():
+    photo_file = request.files.get('photo')
+    if not photo_file:
+        return jsonify({'error': 'Foto requerida'}), 400
+    try:
+        photo_path, photo_rel = save_photo(photo_file, 'sealed')
+    except Exception as e:
+        return jsonify({'error': f'Error procesando foto: {str(e)}'}), 400
+    data, error = identify_sealed(photo_path)
+    if error:
+        return jsonify({'error': error}), 500
+    data['photo'] = photo_rel
+    return jsonify(data)
+
 @app.route('/trades')
 @login_required
 def trades_page():
@@ -243,7 +344,13 @@ def api_cards():
     sport = request.args.get('sport')
     year = request.args.get('year')
     set_name = request.args.get('set')
-    cards = get_all_cards(status=status, search=search, sport=sport, year=year, set_name=set_name, user_id=current_user_id())
+    graded = request.args.get('graded')
+    sort = request.args.get('sort')
+    min_price = request.args.get('min_price')
+    max_price = request.args.get('max_price')
+    cards = get_all_cards(status=status, search=search, sport=sport, year=year, set_name=set_name,
+                          user_id=current_user_id(), graded=graded, sort=sort,
+                          min_price=min_price, max_price=max_price)
     return jsonify(cards)
 
 @app.route('/api/filter-options')
