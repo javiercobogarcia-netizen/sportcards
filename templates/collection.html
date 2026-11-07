@@ -4,61 +4,455 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#111111">
+<meta name="theme-color" content="#000000">
 <title>Colección — SportCards</title>
 <link rel="stylesheet" href="/static/css/app.css">
 <style>
-.filters-panel { background: white; border-radius: var(--radius); padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow); }
-.filters-panel h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
-.filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-.filter-row select { padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text); -webkit-appearance: none; outline: none; width: 100%; }
-.filter-row select:focus { border-color: var(--red); }
-.filter-clear { font-size: 12px; color: var(--red); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; }
-.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.active-filter { background: #ffebee; color: var(--red); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
-.active-filter button { background: none; border: none; color: var(--red); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
+/* ——— HEADER ——— */
+.coll-header {
+  position: sticky; top: 0; z-index: 50;
+  background: #000; border-bottom: 1px solid #0d0d0d;
+}
+.coll-search-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px 8px;
+}
+.coll-search {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  background: #161616; border: 1px solid #1e1e1e; border-radius: 11px;
+  padding: 9px 12px;
+}
+.coll-search.active { border-color: #C9961A; }
+.coll-search input {
+  flex: 1; background: none; border: none; color: #fff;
+  font-size: 15px; outline: none; min-width: 0;
+}
+.coll-search input::placeholder { color: #444; }
+.coll-search-ic { font-size: 14px; color: #555; flex-shrink: 0; }
+.coll-search-clear {
+  background: none; border: none; color: #555; cursor: pointer;
+  font-size: 14px; padding: 0; display: none; line-height: 1;
+}
+.coll-view-sw {
+  background: #141414; border-radius: 8px;
+  padding: 5px 8px; display: flex; gap: 5px; align-items: center;
+  flex-shrink: 0;
+}
+.coll-view-btn {
+  background: none; border: none; font-size: 18px; cursor: pointer;
+  padding: 1px 2px; opacity: 0.35; transition: opacity .15s;
+  line-height: 1;
+}
+.coll-view-btn.active { opacity: 1; }
+.coll-filter-btn {
+  background: none; border: none; font-size: 20px;
+  cursor: pointer; color: #555; padding: 0; line-height: 1;
+  flex-shrink: 0;
+}
+.coll-filter-btn.has-filters { color: #C9961A; }
+
+/* ——— CHIPS ——— */
+.coll-chips {
+  display: flex; gap: 6px; padding: 0 14px 10px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.coll-chips::-webkit-scrollbar { display: none; }
+.coll-chip {
+  border-radius: 20px; padding: 5px 12px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  cursor: pointer; border: none; transition: all .15s;
+}
+.coll-chip.on { background: #C9961A; color: #000; }
+.coll-chip.off { background: #171717; color: #555; }
+
+/* ——— STATS BAR ——— */
+.coll-stats-bar {
+  display: flex; border-bottom: 1px solid #0a0a0a; background: #050505;
+}
+.coll-stat-item { flex: 1; text-align: center; padding: 8px 0; }
+.coll-stat-v {
+  font-size: 15px; font-weight: 800; letter-spacing: -0.3px; color: #fff;
+}
+.coll-stat-v.g { color: #4ade80; }
+.coll-stat-v.r { color: #f87171; }
+.coll-stat-v.b { color: #60a5fa; }
+.coll-stat-v.gold { color: #C9961A; }
+.coll-stat-l {
+  font-size: 9px; color: #444; margin-top: 2px;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+
+/* ——— ADVANCED FILTERS ——— */
+.adv-filters {
+  background: #0d0d0d; border-bottom: 1px solid #161616;
+  padding: 12px 14px; display: none;
+}
+.adv-filters.open { display: block; }
+.adv-filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.adv-filter-row select, .adv-filter-row input {
+  padding: 9px 10px; border: 1.5px solid #222; border-radius: 8px;
+  font-size: 13px; background: #111; color: #fff;
+  -webkit-appearance: none; outline: none; width: 100%;
+}
+.adv-filter-row select:focus, .adv-filter-row input:focus { border-color: #C9961A; }
+.adv-filter-full {
+  width: 100%; padding: 9px 10px; border: 1.5px solid #222; border-radius: 8px;
+  font-size: 13px; background: #111; color: #fff;
+  -webkit-appearance: none; outline: none; margin-bottom: 8px;
+}
+.adv-filter-full:focus { border-color: #C9961A; }
+.adv-filter-actions {
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;
+}
+.adv-clear-btn {
+  font-size: 13px; color: #555; background: none; border: none;
+  cursor: pointer; font-weight: 600;
+}
+.adv-apply-btn {
+  font-size: 13px; color: #C9961A; background: rgba(201,150,26,.1);
+  border: 1px solid rgba(201,150,26,.3); border-radius: 8px;
+  padding: 6px 14px; cursor: pointer; font-weight: 600;
+}
+
+/* ——— RESULT LABEL ——— */
+.result-label {
+  font-size: 11px; color: #444; padding: 6px 14px 2px;
+  text-transform: uppercase; letter-spacing: .4px;
+}
+
+/* ——— GRID VIEW ——— */
+.new-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px; padding: 7px; background: #060606;
+}
+.new-gc {
+  background: #0f0f14; border-radius: 9px; overflow: hidden;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .1s;
+}
+.new-gc:active { transform: scale(.96); }
+.new-gc-img {
+  aspect-ratio: 2.5/3.5; display: flex; align-items: center;
+  justify-content: center; background: #141420;
+  position: relative; overflow: hidden;
+}
+.new-gc-img img { width: 100%; height: 100%; object-fit: cover; }
+.new-gc-ph { font-size: 30px; }
+.new-gc-roi {
+  position: absolute; top: 4px; right: 4px; border-radius: 4px;
+  padding: 2px 5px; font-size: 9px; font-weight: 800;
+}
+.new-gc-roi.p { background: rgba(74,222,128,.18); color: #4ade80; }
+.new-gc-roi.n { background: rgba(248,113,113,.15); color: #f87171; }
+.new-gc-sold {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,.7); text-align: center;
+  font-size: 8px; font-weight: 700; color: #C9961A; padding: 3px 0;
+}
+.new-gc-info { padding: 4px 7px 7px; }
+.new-gc-player {
+  font-size: 11px; font-weight: 700; color: #ddd;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.new-gc-price { font-size: 10px; margin-top: 1px; }
+
+/* ——— LIST VIEW ——— */
+.new-li {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-bottom: 1px solid #0a0a0a;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.new-li:active { background: #080808; }
+.new-li-img {
+  width: 48px; height: 68px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  background: #141420; flex-shrink: 0; overflow: hidden;
+}
+.new-li-img img { width: 100%; height: 100%; object-fit: cover; }
+.new-li-ph { font-size: 22px; }
+.new-li-info { flex: 1; min-width: 0; }
+.new-li-player {
+  font-size: 14px; font-weight: 800; color: #f5f5f2;
+  letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.new-li-set { font-size: 11px; color: #555; margin-top: 2px; }
+.new-li-tags { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+.new-li-tag {
+  background: #1a1a24; border-radius: 4px;
+  padding: 2px 6px; font-size: 9px; font-weight: 700; color: #666;
+}
+.new-li-tag.g { color: #C9961A; border: 1px solid rgba(201,150,26,.3); background: rgba(201,150,26,.08); }
+.new-li-right { text-align: right; flex-shrink: 0; }
+.new-li-price { font-size: 15px; font-weight: 800; color: #C9961A; }
+.new-li-roi { font-size: 11px; font-weight: 700; margin-top: 2px; }
+
+/* ——— SWIPE VIEW ——— */
+.swipe-wrap {
+  display: flex; flex-direction: column;
+  height: calc(100dvh - 190px); background: #050510;
+  position: relative; overflow: hidden;
+}
+.swipe-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  transition: background .4s;
+}
+.swipe-dots {
+  display: flex; justify-content: center; gap: 5px;
+  padding: 10px 0 6px; position: relative; z-index: 5;
+}
+.swipe-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,.18); transition: all .2s;
+}
+.swipe-dot.a { width: 16px; border-radius: 3px; background: #C9961A; }
+.swipe-stage {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; touch-action: pan-y;
+}
+.swipe-side {
+  position: absolute; width: 38%; max-width: 150px;
+  opacity: .3; pointer-events: none; transition: all .3s;
+}
+.swipe-prev { left: -4%; transform: rotate(-9deg) translateY(-8%); }
+.swipe-next { right: -4%; transform: rotate(9deg) translateY(-8%); }
+.swipe-main {
+  width: 56%; max-width: 220px; position: relative; z-index: 3;
+  transform: translateY(-12px); transition: all .3s;
+}
+.swipe-cimg {
+  width: 100%; aspect-ratio: 2.5/3.5; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.8);
+  border: 1px solid rgba(255,255,255,.08); background: #1e3a7a;
+}
+.swipe-cimg img { width: 100%; height: 100%; object-fit: cover; }
+.swipe-cph { font-size: 64px; }
+.swipe-nav {
+  display: flex; justify-content: space-between;
+  padding: 0 20px; position: absolute; bottom: 8px;
+  left: 0; right: 0; pointer-events: none;
+}
+.swipe-nav-btn {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 50%; width: 42px; height: 42px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; pointer-events: all;
+  color: rgba(255,255,255,.5); -webkit-tap-highlight-color: transparent;
+}
+.swipe-info {
+  padding: 10px 18px 6px; position: relative; z-index: 5;
+  background: linear-gradient(to bottom, transparent, #000 24px);
+}
+.swipe-info-player {
+  font-size: 20px; font-weight: 800; letter-spacing: -.3px; color: #fff;
+}
+.swipe-info-set { font-size: 12px; color: #555; margin-top: 1px; }
+.swipe-info-row {
+  display: flex; align-items: center; gap: 10px; margin-top: 7px;
+}
+.swipe-buy { font-size: 13px; color: #555; text-decoration: line-through; }
+.swipe-mkt { font-size: 22px; font-weight: 800; color: #C9961A; }
+.swipe-roi {
+  background: rgba(74,222,128,.12); border: 1px solid rgba(74,222,128,.25);
+  border-radius: 6px; padding: 3px 8px;
+  font-size: 12px; font-weight: 700; color: #4ade80;
+}
+.swipe-roi.neg {
+  background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.2);
+  color: #f87171;
+}
+.swipe-btns { display: flex; gap: 10px; margin-top: 10px; padding-bottom: 2px; }
+.swipe-sell {
+  flex: 1; background: #C9961A; border-radius: 11px; padding: 12px;
+  text-align: center; font-size: 14px; font-weight: 800;
+  color: #000; cursor: pointer; border: none;
+}
+.swipe-edit {
+  flex: 1; background: #141414; border: 1px solid #222;
+  border-radius: 11px; padding: 12px; text-align: center;
+  font-size: 14px; font-weight: 600; color: #888;
+  cursor: pointer; text-decoration: none; display: block;
+}
+.swipe-counter {
+  text-align: center; font-size: 11px; color: #2a2a2a;
+  padding: 4px 0 6px; position: relative; z-index: 5;
+}
+
+/* ——— MODAL ——— */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.78);
+  z-index: 200; display: flex; flex-direction: column;
+  justify-content: flex-end; opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-sheet {
+  background: #111118; border-radius: 24px 24px 0 0;
+  padding: 18px 18px 32px; display: flex; flex-direction: column;
+  gap: 13px; transform: translateY(30px); transition: transform .22s;
+  max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain;
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.modal-sub { font-size: 11px; color: #555; margin-bottom: 4px; }
+.modal-name { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+.modal-close {
+  font-size: 24px; color: #333; background: none; border: none;
+  cursor: pointer; padding: 0 0 0 10px; line-height: 1; flex-shrink: 0;
+}
+.modal-img-wrap {
+  width: 100%; aspect-ratio: 2.5/3.5; border-radius: 16px;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background: #1e3a7a;
+}
+.modal-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.modal-img-ph { font-size: 72px; }
+.modal-prices { display: flex; gap: 8px; }
+.modal-pb {
+  flex: 1; border-radius: 11px; padding: 10px 8px; text-align: center;
+}
+.modal-pb-l {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 4px;
+}
+.modal-pb-v { font-size: 17px; font-weight: 800; }
+.modal-tags { display: flex; gap: 7px; flex-wrap: wrap; }
+.modal-tag {
+  border-radius: 7px; padding: 4px 9px;
+  font-size: 10px; font-weight: 700; background: #1a1a24; color: #666;
+}
+.modal-tag.g {
+  color: #C9961A; border: 1px solid rgba(201,150,26,.3);
+  background: rgba(201,150,26,.08);
+}
+.modal-btns { display: flex; gap: 10px; }
+.modal-sell {
+  flex: 1; background: #C9961A; border-radius: 12px; padding: 14px;
+  text-align: center; font-size: 14px; font-weight: 800;
+  color: #000; cursor: pointer; border: none;
+}
+.modal-edit {
+  flex: 1; background: #1a1a24; border: 1px solid #2a2a38;
+  border-radius: 12px; padding: 14px; text-align: center;
+  font-size: 14px; font-weight: 600; color: #aaa;
+  cursor: pointer; text-decoration: none; display: block;
+}
+
+/* ——— EMPTY ——— */
+.coll-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 24px; gap: 16px; text-align: center;
+}
+.coll-empty-ic { font-size: 48px; }
+.coll-empty-txt { font-size: 16px; color: #555; }
 </style>
 </head>
 <body>
 
-<div class="nav">
-  <a href="/" class="nav-back">‹</a>
-  <h1>Mi colección</h1>
-  <a href="/api/export" style="color:white;font-size:20px;text-decoration:none" title="Exportar">📊</a>
+<!-- HEADER -->
+<div class="coll-header">
+  <div class="coll-search-row">
+    <div class="coll-search" id="search-wrap">
+      <span class="coll-search-ic">🔍</span>
+      <input type="text" id="search" placeholder="Buscar jugador, set, equipo..."
+             oninput="onSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="coll-search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+    </div>
+    <div class="coll-view-sw">
+      <button class="coll-view-btn" id="btn-swipe" onclick="setView('swipe')" title="Swipe">🃏</button>
+      <button class="coll-view-btn" id="btn-grid"  onclick="setView('grid')"  title="Grid">⊞</button>
+      <button class="coll-view-btn" id="btn-list"  onclick="setView('list')"  title="Lista">☰</button>
+    </div>
+    <button class="coll-filter-btn" id="filter-toggle-btn" onclick="toggleFilters()" title="Filtros avanzados">⚙️</button>
+  </div>
+  <div class="coll-chips" id="chips-row"></div>
 </div>
 
-<div class="container">
-
-  <div class="search-box">
-    <input type="text" id="search" placeholder="Buscar jugador, set, equipo..." oninput="loadCards()">
+<!-- STATS BAR -->
+<div class="coll-stats-bar">
+  <div class="coll-stat-item">
+    <div class="coll-stat-v gold" id="stat-count">—</div>
+    <div class="coll-stat-l">Cartas</div>
   </div>
-
-  <div class="filter-tabs">
-    <button class="filter-tab active" data-status="" onclick="setFilter(this,'')">Todas</button>
-    <button class="filter-tab" data-status="owned" onclick="setFilter(this,'owned')">En posesión</button>
-    <button class="filter-tab" data-status="sold" onclick="setFilter(this,'sold')">Vendidas</button>
+  <div class="coll-stat-item">
+    <div class="coll-stat-v b" id="stat-value">—</div>
+    <div class="coll-stat-l">Valor</div>
   </div>
+  <div class="coll-stat-item">
+    <div class="coll-stat-v" id="stat-roi">—</div>
+    <div class="coll-stat-l">ROI</div>
+  </div>
+</div>
 
-  <div class="filters-panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <h3 style="margin:0">🔽 Filtros</h3>
-      <button class="filter-clear" onclick="clearFilters()">Limpiar todo</button>
-    </div>
-    <div class="filter-row">
-      <select id="f-sport" onchange="loadCards()"><option value="">Todos los deportes</option></select>
-      <select id="f-year" onchange="loadCards()"><option value="">Todos los años</option></select>
-    </div>
-    <select id="f-set" onchange="loadCards()" style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;-webkit-appearance:none;outline:none">
-      <option value="">Todas las colecciones</option>
+<!-- ADVANCED FILTERS -->
+<div class="adv-filters" id="adv-filters">
+  <div class="adv-filter-row">
+    <select id="f-sport" onchange="loadCards()"><option value="">Todos los deportes</option></select>
+    <select id="f-year"  onchange="loadCards()"><option value="">Todos los años</option></select>
+  </div>
+  <select id="f-set" onchange="loadCards()" class="adv-filter-full">
+    <option value="">Todas las colecciones</option>
+  </select>
+  <div class="adv-filter-row">
+    <select id="f-graded" onchange="loadCards()">
+      <option value="">Gradadas y no grad.</option>
+      <option value="1">Solo gradadas</option>
+      <option value="0">Solo sin gradar</option>
+    </select>
+    <select id="f-sort" onchange="loadCards()">
+      <option value="recent">Más recientes</option>
+      <option value="player">Jugador A-Z</option>
+      <option value="price_desc">Precio compra ↓</option>
+      <option value="price_asc">Precio compra ↑</option>
+      <option value="market_desc">Valor mercado ↓</option>
+      <option value="profit_desc">Mayor beneficio ↓</option>
     </select>
   </div>
-
-  <div id="active-filters" class="active-filters"></div>
-  <div id="result-count" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
-  <div id="cards-list"></div>
-
+  <div class="adv-filter-row">
+    <div style="position:relative">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px">€</span>
+      <input type="number" id="f-min-price" placeholder="Precio mín" min="0" step="1"
+             oninput="loadCards()" style="padding-left:24px">
+    </div>
+    <div style="position:relative">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#555;font-size:13px">€</span>
+      <input type="number" id="f-max-price" placeholder="Precio máx" min="0" step="1"
+             oninput="loadCards()" style="padding-left:24px">
+    </div>
+  </div>
+  <div class="adv-filter-actions">
+    <button class="adv-clear-btn" onclick="clearFilters()">Limpiar todo</button>
+    <button class="adv-apply-btn" onclick="toggleFilters()">Listo ✓</button>
+  </div>
 </div>
 
+<!-- RESULT LABEL -->
+<div class="result-label" id="result-label"></div>
+
+<!-- CARDS AREA -->
+<div id="cards-area"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal-sheet" id="modal-sheet">
+    <div class="modal-top">
+      <div>
+        <div class="modal-sub" id="modal-sub"></div>
+        <div class="modal-name" id="modal-name"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-img-wrap" id="modal-img-wrap">
+      <span class="modal-img-ph">🃏</span>
+    </div>
+    <div class="modal-prices" id="modal-prices"></div>
+    <div class="modal-tags" id="modal-tags"></div>
+    <div class="modal-btns" id="modal-btns"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <a href="/"><span>🏠</span><span>Inicio</span></a>
   <a href="/collection" class="active"><span>📚</span><span>Colección</span></a>
@@ -67,101 +461,424 @@
 </nav>
 
 <script>
-let currentStatus = '';
+/* ——— STATE ——— */
+let viewMode    = localStorage.getItem('coll-view') || 'grid';
+let chipStatus  = '';
+let chipSport   = '';
+let filtersOpen = false;
+let allCards    = [];
+let swipeIndex  = 0;
+let swipeTouch  = null;
 
-async function loadFilterOptions() {
-  const r = await fetch('/api/filter-options');
-  const opts = await r.json();
-  const sportSel = document.getElementById('f-sport');
-  const yearSel = document.getElementById('f-year');
-  const setSel = document.getElementById('f-set');
-  opts.sports.forEach(s => sportSel.innerHTML += `<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`);
-  opts.years.forEach(y => yearSel.innerHTML += `<option value="${y}">${y}</option>`);
-  opts.sets.forEach(s => setSel.innerHTML += `<option value="${s}">${s}</option>`);
+/* ——— INIT ——— */
+loadFilterOptions();
+loadCards();
+updateViewBtns();
+
+/* ——— VIEW TOGGLE ——— */
+function setView(v) {
+  viewMode = v;
+  localStorage.setItem('coll-view', v);
+  updateViewBtns();
+  renderCards(allCards);
+}
+function updateViewBtns() {
+  ['swipe','grid','list'].forEach(v => {
+    document.getElementById('btn-'+v).classList.toggle('active', viewMode === v);
+  });
 }
 
-function setFilter(btn, status) {
-  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentStatus = status;
+/* ——— CHIPS ——— */
+function buildChips(sports) {
+  const row = document.getElementById('chips-row');
+  const statuses = [
+    {label:'Todas', val:''},
+    {label:'En posesión', val:'owned'},
+    {label:'Vendidas', val:'sold'},
+  ];
+  let html = statuses.map(s =>
+    `<button class="coll-chip ${chipStatus===s.val?'on':'off'}"
+      onclick="setChipStatus('${s.val}')">${s.label}</button>`
+  ).join('');
+  if (sports && sports.length) {
+    html += sports.map(sp =>
+      `<button class="coll-chip ${chipSport===sp?'on':'off'}"
+        onclick="setChipSport('${sp}')">${sp.charAt(0).toUpperCase()+sp.slice(1)}</button>`
+    ).join('');
+  }
+  row.innerHTML = html;
+}
+function setChipStatus(val) {
+  chipStatus = val;
+  buildChips(window._sports || []);
+  loadCards();
+}
+function setChipSport(val) {
+  chipSport = chipSport === val ? '' : val;
+  if (chipSport) document.getElementById('f-sport').value = val;
+  else document.getElementById('f-sport').value = '';
+  buildChips(window._sports || []);
   loadCards();
 }
 
-function clearFilters() {
-  document.getElementById('f-sport').value = '';
-  document.getElementById('f-year').value = '';
-  document.getElementById('f-set').value = '';
+/* ——— SEARCH ——— */
+function onSearch() {
+  const val = document.getElementById('search').value;
+  document.getElementById('search-clear').style.display = val ? 'block' : 'none';
+  document.getElementById('search-wrap').classList.toggle('active', !!val);
+  loadCards();
+}
+function clearSearch() {
   document.getElementById('search').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  document.getElementById('search-wrap').classList.remove('active');
   loadCards();
+}
+
+/* ——— FILTERS ——— */
+function toggleFilters() {
+  filtersOpen = !filtersOpen;
+  document.getElementById('adv-filters').classList.toggle('open', filtersOpen);
+  document.getElementById('filter-toggle-btn').classList.toggle('has-filters', filtersOpen);
+}
+function clearFilters() {
+  ['f-sport','f-year','f-set','f-graded'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-sort').value = 'recent';
+  document.getElementById('f-min-price').value = '';
+  document.getElementById('f-max-price').value = '';
+  chipSport = '';
+  buildChips(window._sports || []);
+  loadCards();
+}
+
+/* ——— API ——— */
+async function loadFilterOptions() {
+  try {
+    const r   = await fetch('/api/filter-options');
+    const opts = await r.json();
+    window._sports = opts.sports || [];
+    buildChips(window._sports);
+    const sportSel = document.getElementById('f-sport');
+    const yearSel  = document.getElementById('f-year');
+    const setSel   = document.getElementById('f-set');
+    opts.sports.forEach(s => sportSel.innerHTML += `<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`);
+    opts.years.forEach(y  => yearSel.innerHTML  += `<option value="${y}">${y}</option>`);
+    opts.sets.forEach(s   => setSel.innerHTML   += `<option value="${s}">${s}</option>`);
+  } catch(e) { buildChips([]); }
 }
 
 async function loadCards() {
-  const q = document.getElementById('search').value.trim();
-  const sport = document.getElementById('f-sport').value;
-  const year = document.getElementById('f-year').value;
-  const set = document.getElementById('f-set').value;
+  const q        = document.getElementById('search').value.trim();
+  const sport    = document.getElementById('f-sport').value;
+  const year     = document.getElementById('f-year').value;
+  const set      = document.getElementById('f-set').value;
+  const graded   = document.getElementById('f-graded').value;
+  const sort     = document.getElementById('f-sort').value;
+  const minPrice = document.getElementById('f-min-price').value;
+  const maxPrice = document.getElementById('f-max-price').value;
 
   const params = new URLSearchParams();
-  if (currentStatus) params.append('status', currentStatus);
-  if (q) params.append('q', q);
-  if (sport) params.append('sport', sport);
-  if (year) params.append('year', year);
-  if (set) params.append('set', set);
+  if (chipStatus)    params.append('status',    chipStatus);
+  if (q)             params.append('q',          q);
+  if (sport)         params.append('sport',      sport);
+  if (year)          params.append('year',       year);
+  if (set)           params.append('set',        set);
+  if (graded !== '') params.append('graded',     graded);
+  if (sort && sort !== 'recent') params.append('sort', sort);
+  if (minPrice)      params.append('min_price',  minPrice);
+  if (maxPrice)      params.append('max_price',  maxPrice);
 
-  // Mostrar filtros activos
-  const active = [];
-  if (sport) active.push({label: sport.charAt(0).toUpperCase()+sport.slice(1), key: 'f-sport'});
-  if (year) active.push({label: year, key: 'f-year'});
-  if (set) active.push({label: set.length > 25 ? set.substring(0,25)+'…' : set, key: 'f-set'});
-  document.getElementById('active-filters').innerHTML = active.map(a =>
-    `<div class="active-filter">${a.label}<button onclick="document.getElementById('${a.key}').value='';loadCards()">×</button></div>`
-  ).join('');
+  try {
+    const r = await fetch('/api/cards?' + params);
+    allCards = await r.json();
+  } catch(e) { allCards = []; }
 
-  const r = await fetch('/api/cards?' + params);
-  const cards = await r.json();
-  document.getElementById('result-count').textContent = cards.length ? `${cards.length} carta${cards.length!==1?'s':''}` : '';
+  swipeIndex = 0;
+  updateStats(allCards);
+  renderCards(allCards);
+}
 
-  const container = document.getElementById('cards-list');
+/* ——— STATS ——— */
+function updateStats(cards) {
+  document.getElementById('stat-count').textContent = cards.length;
+  const owned    = cards.filter(c => c.status !== 'sold');
+  const totalVal = owned.reduce((s, c) => s + (c.market_price || c.purchase_price || 0), 0);
+  const totalBought = owned.reduce((s, c) => s + (c.purchase_price || 0), 0);
+  document.getElementById('stat-value').textContent = '€' + Math.round(totalVal).toLocaleString('es');
+  const roiEl = document.getElementById('stat-roi');
+  if (totalBought > 0) {
+    const roi = ((totalVal - totalBought) / totalBought * 100);
+    roiEl.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%';
+    roiEl.className   = 'coll-stat-v ' + (roi >= 0 ? 'g' : 'r');
+  } else {
+    roiEl.textContent = '—';
+    roiEl.className   = 'coll-stat-v';
+  }
+  const lbl = document.getElementById('result-label');
+  lbl.textContent = cards.length
+    ? `${cards.length} carta${cards.length!==1?'s':''}`
+    : '';
+}
+
+/* ——— RENDER HELPERS ——— */
+const GRADIENTS = [
+  'linear-gradient(135deg,#1e3a7a,#0f2060)',
+  'linear-gradient(135deg,#2d1b4e,#1a0f40)',
+  'linear-gradient(135deg,#1a3020,#0f1f10)',
+  'linear-gradient(135deg,#201a10,#2a2010)',
+  'linear-gradient(135deg,#0f1e35,#1a3a6e)',
+  'linear-gradient(135deg,#1a0a1a,#2a102a)',
+  'linear-gradient(135deg,#2a1010,#180808)',
+  'linear-gradient(135deg,#0a1a10,#051008)',
+];
+function gradient(i) { return GRADIENTS[i % GRADIENTS.length]; }
+
+function roiCalc(c) {
+  if (c.status === 'sold' && c.sale_price && c.purchase_price) {
+    return { pct: ((c.sale_price - c.purchase_price) / c.purchase_price * 100).toFixed(1),
+             pos: c.sale_price >= c.purchase_price };
+  }
+  if (c.market_price && c.purchase_price) {
+    return { pct: ((c.market_price - c.purchase_price) / c.purchase_price * 100).toFixed(1),
+             pos: c.market_price >= c.purchase_price };
+  }
+  return null;
+}
+function displayPrice(c) {
+  if (c.status === 'sold' && c.sale_price) return '€' + c.sale_price.toFixed(2);
+  if (c.market_price) return '€' + c.market_price.toFixed(2);
+  if (c.purchase_price) return '€' + c.purchase_price.toFixed(2);
+  return '—';
+}
+
+/* ——— RENDER ——— */
+function renderCards(cards) {
+  const area = document.getElementById('cards-area');
   if (!cards.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">🃏</div><p>No hay cartas${q ? ' para "'+q+'"' : ''}.</p><a href="/add" class="btn btn-primary" style="max-width:220px;margin:0 auto">Añadir carta</a></div>`;
+    const q = document.getElementById('search').value.trim();
+    area.innerHTML = `<div class="coll-empty">
+      <div class="coll-empty-ic">🃏</div>
+      <div class="coll-empty-txt">No hay cartas${q ? ' para "'+q+'"' : ''}.</div>
+      <a href="/add" class="btn btn-primary" style="max-width:220px">Añadir carta</a>
+    </div>`;
     return;
   }
 
-  container.innerHTML = cards.map(c => {
-    const thumb = c.photo_front
-      ? `<img class="card-thumb" src="/${c.photo_front}" loading="lazy">`
-      : `<div class="card-thumb-placeholder">🃏</div>`;
-    const numbering = c.numbering ? String(c.numbering).replace(/^\/+/,'') : null;
-    const badges = [
-      c.graded ? `<span class="badge badge-graded">${c.grading_company} ${c.grade}</span>` : '',
-      numbering ? `<span class="badge badge-numbered">/${numbering}</span>` : '',
-      c.status === 'sold' ? `<span class="badge badge-sold">Vendida</span>` : '',
-    ].filter(Boolean).join(' ');
+  if (viewMode === 'grid')  renderGrid(cards);
+  else if (viewMode === 'list') renderList(cards);
+  else renderSwipe(cards);
+}
 
-    let priceHtml = '';
-    if (c.status === 'sold' && c.sale_price && c.purchase_price) {
-      const profit = c.sale_price - c.purchase_price;
-      const roi = ((profit / c.purchase_price) * 100).toFixed(1);
-      priceHtml = `<div class="card-price">Vendida: ${c.sale_price.toFixed(2)} € <span class="${profit>=0?'roi-positive':'roi-negative'}">(${profit>=0?'+':''}${profit.toFixed(2)} € / ${roi}%)</span></div>`;
-    } else {
-      priceHtml = `<div class="card-price">Compra: ${c.purchase_price ? c.purchase_price.toFixed(2)+' €' : '—'}${c.market_price ? ' · Mercado: '+c.market_price.toFixed(2)+' €' : ''}</div>`;
-    }
-
-    return `<a href="/card/${c.id}" class="card-item">
-      ${thumb}
-      <div class="card-info">
-        <div class="card-player">${c.player}</div>
-        <div class="card-meta">${[c.year, c.set_name, c.team].filter(Boolean).join(' · ')}</div>
-        ${badges ? `<div style="margin-bottom:4px">${badges}</div>` : ''}
-        ${priceHtml}
+function renderGrid(cards) {
+  const area = document.getElementById('cards-area');
+  area.innerHTML = `<div class="new-grid">${cards.map((c, i) => {
+    const img = c.photo_front
+      ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
+      : `<span class="new-gc-ph">🃏</span>`;
+    const roi = roiCalc(c);
+    const roiBadge = roi
+      ? `<div class="new-gc-roi ${roi.pos?'p':'n'}">${roi.pos?'+':''}${roi.pct}%</div>`
+      : '';
+    const soldBadge = c.status==='sold' ? `<div class="new-gc-sold">VENDIDA</div>` : '';
+    const priceColor = (() => {
+      const r = roiCalc(c); if (!r) return '#888';
+      return r.pos ? '#4ade80' : '#f87171';
+    })();
+    const price = displayPrice(c);
+    return `<div class="new-gc" onclick="openModal(${i})" style="">
+      <div class="new-gc-img" style="background:${gradient(i)}">
+        ${img}${roiBadge}${soldBadge}
       </div>
-      <span style="color:#ccc;font-size:20px">›</span>
-    </a>`;
+      <div class="new-gc-info">
+        <div class="new-gc-player">${c.player}</div>
+        <div class="new-gc-price" style="color:${priceColor}">${price}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderList(cards) {
+  const area = document.getElementById('cards-area');
+  area.innerHTML = cards.map((c, i) => {
+    const img = c.photo_front
+      ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
+      : `<span class="new-li-ph">🃏</span>`;
+    const roi = roiCalc(c);
+    const roiHtml = roi
+      ? `<div class="new-li-roi" style="color:${roi.pos?'#4ade80':'#f87171'}">${roi.pos?'+':''}${roi.pct}%</div>`
+      : '';
+    const tags = [];
+    if (c.is_rookie || c.rookie) tags.push(`<span class="new-li-tag g">RC</span>`);
+    if (c.graded) tags.push(`<span class="new-li-tag">${[c.grading_company,c.grade].filter(Boolean).join(' ')}</span>`);
+    if (c.numbering) tags.push(`<span class="new-li-tag">/${String(c.numbering).replace(/^\/+/,'')}</span>`);
+    if (c.status==='sold') tags.push(`<span class="new-li-tag" style="color:#C9961A">Vendida</span>`);
+    return `<div class="new-li" onclick="openModal(${i})">
+      <div class="new-li-img" style="${c.photo_front?'':'background:'+gradient(i)}">${img}</div>
+      <div class="new-li-info">
+        <div class="new-li-player">${c.player}</div>
+        <div class="new-li-set">${[c.year,c.set_name].filter(Boolean).join(' · ')}</div>
+        ${tags.length ? `<div class="new-li-tags">${tags.join('')}</div>` : ''}
+      </div>
+      <div class="new-li-right">
+        <div class="new-li-price">${displayPrice(c)}</div>
+        ${roiHtml}
+      </div>
+    </div>`;
   }).join('');
 }
 
-loadFilterOptions();
-loadCards();
+function renderSwipe(cards) {
+  const area = document.getElementById('cards-area');
+  if (!cards.length) return;
+
+  const dots = Math.min(cards.length, 7);
+  const startDot = Math.max(0, Math.min(swipeIndex - 3, cards.length - dots));
+
+  const dotsHtml = Array.from({length: Math.min(dots, cards.length)}, (_, di) => {
+    const ci = startDot + di;
+    return `<div class="swipe-dot${ci===swipeIndex?' a':''}"></div>`;
+  }).join('');
+
+  const c    = cards[swipeIndex];
+  const prev = swipeIndex > 0 ? cards[swipeIndex-1] : null;
+  const next = swipeIndex < cards.length-1 ? cards[swipeIndex+1] : null;
+
+  const cardImg = (card, idx) => card.photo_front
+    ? `<img src="/${card.photo_front}" loading="lazy" alt="">`
+    : `<span class="swipe-cph">🃏</span>`;
+
+  const roi   = roiCalc(c);
+  const price = displayPrice(c);
+  const buyStr = c.purchase_price ? '€'+c.purchase_price.toFixed(2) : '';
+  const roiHtml = roi
+    ? `<span class="swipe-roi${roi.pos?'':' neg'}">${roi.pos?'+':''}${roi.pct}%</span>`
+    : '';
+  const bg = c.photo_front ? '#050510' : gradient(swipeIndex).replace('linear-gradient','radial-gradient');
+
+  area.innerHTML = `<div class="swipe-wrap" id="swipe-wrap">
+    <div class="swipe-bg" id="swipe-bg" style="background:radial-gradient(ellipse at 50% 35%,rgba(30,58,122,.4) 0%,rgba(5,5,16,.95) 60%)"></div>
+    <div class="swipe-dots">${dotsHtml}</div>
+    <div class="swipe-stage" id="swipe-stage">
+      ${prev ? `<div class="swipe-side swipe-prev">
+        <div class="swipe-cimg" style="${prev.photo_front?'':'background:'+gradient(swipeIndex-1)}">
+          ${cardImg(prev, swipeIndex-1)}
+        </div></div>` : '<div class="swipe-side swipe-prev"></div>'}
+      <div class="swipe-main">
+        <div class="swipe-cimg" style="${c.photo_front?'':'background:'+gradient(swipeIndex)}">
+          ${cardImg(c, swipeIndex)}
+        </div>
+      </div>
+      ${next ? `<div class="swipe-side swipe-next">
+        <div class="swipe-cimg" style="${next.photo_front?'':'background:'+gradient(swipeIndex+1)}">
+          ${cardImg(next, swipeIndex+1)}
+        </div></div>` : '<div class="swipe-side swipe-next"></div>'}
+      <div class="swipe-nav">
+        ${swipeIndex > 0 ? `<button class="swipe-nav-btn" onclick="swipeGo(-1)">←</button>` : '<div></div>'}
+        ${swipeIndex < cards.length-1 ? `<button class="swipe-nav-btn" onclick="swipeGo(1)">→</button>` : '<div></div>'}
+      </div>
+    </div>
+    <div class="swipe-info">
+      <div class="swipe-info-player">${c.player}</div>
+      <div class="swipe-info-set">${[c.year,c.set_name,c.team].filter(Boolean).join(' · ')}</div>
+      <div class="swipe-info-row">
+        ${buyStr ? `<span class="swipe-buy">${buyStr}</span>` : ''}
+        <span class="swipe-mkt">${price}</span>
+        ${roiHtml}
+      </div>
+      <div class="swipe-btns">
+        <a href="/card/${c.id}" class="swipe-edit">✏️ Editar</a>
+        <button class="swipe-sell" onclick="goSell(${c.id})">💰 Vender</button>
+      </div>
+    </div>
+    <div class="swipe-counter">${swipeIndex+1} / ${cards.length}</div>
+  </div>`;
+
+  initSwipeTouch();
+}
+
+function swipeGo(dir) {
+  swipeIndex = Math.max(0, Math.min(allCards.length-1, swipeIndex + dir));
+  renderSwipe(allCards);
+}
+
+function initSwipeTouch() {
+  const stage = document.getElementById('swipe-stage');
+  if (!stage) return;
+  let startX = 0;
+  stage.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
+  stage.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) swipeGo(dx < 0 ? 1 : -1);
+  }, {passive:true});
+}
+
+function goSell(id) { window.location.href = '/card/'+id; }
+
+/* ——— MODAL ——— */
+function openModal(idx) {
+  const c = allCards[idx];
+  if (!c) return;
+  const overlay = document.getElementById('modal-overlay');
+
+  document.getElementById('modal-sub').textContent =
+    [c.year, c.set_name, c.numbering ? '/'+String(c.numbering).replace(/^\/+/,'') : ''].filter(Boolean).join(' · ');
+  document.getElementById('modal-name').textContent = c.player;
+
+  const imgWrap = document.getElementById('modal-img-wrap');
+  imgWrap.style.background = gradient(idx);
+  imgWrap.innerHTML = c.photo_front
+    ? `<img src="/${c.photo_front}" loading="lazy" alt="">`
+    : `<span class="modal-img-ph">🃏</span>`;
+
+  // Prices
+  const roi = roiCalc(c);
+  const pricesEl = document.getElementById('modal-prices');
+  const buyPrice  = c.purchase_price ? '€'+c.purchase_price.toFixed(2) : '—';
+  const mktPrice  = c.market_price   ? '€'+c.market_price.toFixed(2)   : (c.status==='sold'&&c.sale_price ? '€'+c.sale_price.toFixed(2) : '—');
+  const roiTxt    = roi ? (roi.pos?'+':'')+roi.pct+'%' : '—';
+  pricesEl.innerHTML = `
+    <div class="modal-pb" style="background:#0d0d14">
+      <div class="modal-pb-l" style="color:#555">Compra</div>
+      <div class="modal-pb-v" style="color:#fff">${buyPrice}</div>
+    </div>
+    <div class="modal-pb" style="background:rgba(201,150,26,.08);border:1px solid rgba(201,150,26,.2)">
+      <div class="modal-pb-l" style="color:#C9961A">Mercado</div>
+      <div class="modal-pb-v" style="color:#C9961A">${mktPrice}</div>
+    </div>
+    <div class="modal-pb" style="background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.15)">
+      <div class="modal-pb-l" style="color:#4ade80">ROI</div>
+      <div class="modal-pb-v" style="color:${roi?(roi.pos?'#4ade80':'#f87171'):'#555'}">${roiTxt}</div>
+    </div>`;
+
+  // Tags
+  const tags = [];
+  if (c.is_rookie || c.rookie) tags.push(`<span class="modal-tag g">RC</span>`);
+  if (c.graded) tags.push(`<span class="modal-tag">${[c.grading_company,c.grade].filter(Boolean).join(' ')}</span>`);
+  if (c.numbering) tags.push(`<span class="modal-tag">/${String(c.numbering).replace(/^\/+/,'')}</span>`);
+  if (c.sport) tags.push(`<span class="modal-tag">${c.sport.charAt(0).toUpperCase()+c.sport.slice(1)}</span>`);
+  if (c.team) tags.push(`<span class="modal-tag">${c.team}</span>`);
+  if (c.status==='sold') tags.push(`<span class="modal-tag" style="color:#C9961A;border:1px solid rgba(201,150,26,.3)">Vendida</span>`);
+  document.getElementById('modal-tags').innerHTML = tags.join('');
+
+  // Buttons
+  document.getElementById('modal-btns').innerHTML = `
+    <a href="/card/${c.id}" class="modal-edit">✏️ Editar</a>
+    <button class="modal-sell" onclick="goSell(${c.id})">💰 Vender</button>`;
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 </script>
 </body>
 </html>
