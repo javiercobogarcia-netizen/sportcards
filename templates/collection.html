@@ -464,7 +464,7 @@
 <script>
 /* ——— STATE ——— */
 let viewMode    = localStorage.getItem('coll-view') || 'grid';
-let chipStatus  = '';
+let chipStatus  = 'owned';
 let chipSport   = '';
 let filtersOpen = false;
 let allCards    = [];
@@ -864,7 +864,7 @@ function openModal(idx) {
   // Buttons
   document.getElementById('modal-btns').innerHTML = `
     <a href="/card/${c.id}" class="modal-edit">✏️ Editar</a>
-    <button class="modal-sell" onclick="goSell(${c.id})">💰 Vender</button>`;
+    ${c.status !== 'sold' ? `<button class="modal-sell" onclick="goSell(${c.id})">💰 Vender</button>` : ''}`;
 
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
