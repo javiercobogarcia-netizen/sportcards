@@ -14,6 +14,30 @@ def _seed_if_empty(conn):
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM users')
     if c.fetchone()[0] == 0:
+        # Ensure all tables exist before seeding
+        c.executescript('''
+            CREATE TABLE IF NOT EXISTS sealed_products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER DEFAULT 1,
+                name TEXT NOT NULL,
+                sport TEXT,
+                year INTEGER,
+                brand TEXT,
+                product_type TEXT DEFAULT 'hobby_box',
+                quantity INTEGER DEFAULT 1,
+                purchase_price REAL,
+                purchase_date TEXT,
+                sale_price REAL,
+                sale_date TEXT,
+                market_price REAL,
+                status TEXT DEFAULT 'sealed',
+                photo TEXT,
+                notes TEXT,
+                quantity_sold INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+        ''')
         seed_path = os.path.join(os.path.dirname(__file__), 'seed_data.sql')
         if os.path.exists(seed_path):
             with open(seed_path, 'r', encoding='utf-8') as f:
