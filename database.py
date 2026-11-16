@@ -10,6 +10,16 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+def _seed_if_empty(conn):
+    c = conn.cursor()
+    c.execute('SELECT COUNT(*) FROM users')
+    if c.fetchone()[0] == 0:
+        seed_path = os.path.join(os.path.dirname(__file__), 'seed_data.sql')
+        if os.path.exists(seed_path):
+            with open(seed_path, 'r', encoding='utf-8') as f:
+                conn.executescript(f.read())
+            conn.commit()
+
 def init_db():
     conn = get_db()
     c = conn.cursor()
@@ -96,6 +106,7 @@ def init_db():
         except Exception:
             pass
     conn.commit()
+    _seed_if_empty(conn)
     conn.close()
 
 # --- Usuarios ---
